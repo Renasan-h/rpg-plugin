@@ -1,0 +1,39 @@
+name: RpgPlugin
+version: 1.0.0
+main: com.example.rpg.RpgPlugin
+api-version: "1.21"
+author: Renasan.devs
+
+commands:
+  money:
+    description: 所持金を確認します
+    usage: /money
+  exp:
+    description: 現在の経験値を確認します
+    usage: /exp
+  pay:
+    description: 指定したユーザのお金を送金します
+    usage: /pay <player> <amount>
+  shop:
+    description: SHOPを開きます
+    usage: /shop
+  rpg:
+    description: RPGプラグイン管理コマンド
+    usage: /rpg reload
+  shopadmin:
+    description: RPGShop admin command
+    usage: /shopadmin <reload|open|reset|resetall>
+    permission: rpg.shop.admin
+
+permissions:
+  rpg.admin:
+    description: RPG管理コマンドを使用できます
+    default: op
+  rpg.money.admin:
+    description: 所持金を管理できます
+    default: op
+  rpg.shop.vip:
+    description: VIP SHOP商品を閲覧・購入できます
+    default: op
+  rpg.shop.admin:
+    default: op

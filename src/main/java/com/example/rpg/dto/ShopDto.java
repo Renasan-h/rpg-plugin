@@ -3,14 +3,24 @@ package com.example.rpg.dto;
 import java.util.Map;
 
 public class ShopDto {
-    private final String title;
-    private final int size;
-    private final Map<String, ShopItemDto> items;
 
-    public ShopDto(String title, int size, Map<String, ShopItemDto> items) {
+    /**
+     * ショップタイトル
+     */
+    private final String title;
+    /**
+     * ショップ表示領域
+     */
+    private final int size;
+    /**
+     * ショップカテゴリ情報
+     */
+    private final Map<String, ShopCategoryDto> categories;
+
+    public ShopDto(String title, int size, Map<String, ShopCategoryDto> categories) {
         this.title = title;
         this.size = size;
-        this.items = items;
+        this.categories = categories;
     }
 
     public String getTitle() {
@@ -21,7 +31,7 @@ public class ShopDto {
         return size;
     }
 
-    public Map<String, ShopItemDto> getItems() {
-        return items;
+    public Map<String, ShopCategoryDto> getCategories() {
+        return categories;
     }
 }

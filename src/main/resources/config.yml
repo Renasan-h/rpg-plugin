@@ -1,79 +1,123 @@
 shop:
   title: "<gold>RPG SHOP</gold>"
-  size: 27
-  items:
-    iron_sword:
+  size: 45
+
+  categories:
+    weapon:
       slot: 10
-      material: IRON_SWORD
-      name: "<white>鉄の剣</white>"
-      price: 100
-      amount: 1
-      lore:
-        - "<yellow>価格: 100G</yellow>"
-        - "<gray>序盤用の武器</gray>"
+      icon: IRON_SWORD
+      name: "<gold>武器</gold>"
+      items:
+        iron_sword:
+          slot: 10
+          material: IRON_SWORD
+          name: "鉄の剣"
+          dispColor: "white"
+          dispLabel: "<#dispColor#>#name#</#dispColor#>"
+          price: 100
+          sellPrice: 30
+          amount: 1
+          lore:
+            - "<yellow>価格: #price#G</yellow>"
+            - "<gray>売却: #sellPrice#G</gray>"
+            - "<gray>序盤用の武器</gray>"
 
-    bread:
+        vip_sword:
+          slot: 22
+          type: ITEM
+          material: DIAMOND_SWORD
+          name: "VIP専用剣"
+          dispColor: "aqua"
+          dispLabel: "<#dispColor#>#name#</#dispColor#>"
+          price: 10000
+          amount: 1
+          permission: "rpg.shop.vip"
+          lore:
+            - "<yellow>価格: #price#G</yellow>"
+            - "<aqua>VIP専用商品</aqua>"
+    defense:
       slot: 12
-      material: BREAD
-      name: "<white>パン</white>"
-      price: 10
-      amount: 5
-      lore:
-        - "<yellow>価格: 100G</yellow>"
-
-    shield:
+      icon: SHIELD
+      name: "<blue>防具</blue>"
+      items:
+        shield:
+          slot: 14
+          material: SHIELD
+          name: "盾"
+          dispColor: "white"
+          dispLabel: "<#dispColor#>#name#</#dispColor#>"
+          price: 80
+          amount: 1
+          lore:
+            - "<yellow>価格: #price#G</yellow>"
+    food:
       slot: 14
-      material: SHIELD
-      name: "<white>盾</white>"
-      price: 80
-      amount: 1
-      lore:
-        - "<yellow>価格: 80G</yellow>"
+      icon: BREAD
+      name: "<yellow>食料</yellow>"
+      items:
+        bread:
+          slot: 12
+          material: BREAD
+          name: "パン"
+          dispColor: "white"
+          dispLabel: "<#dispColor#>#name#</#dispColor#>"
+          price: 10
+          sellPrice: 3
+          amount: 5
+          lore:
+            - "<yellow>価格: #price#G</yellow>"
+            - "<gray>売却: #sellPrice#G</gray>"
 
     potion:
       slot: 16
-      material: POTION
-      name: "<light_purple>回復ポーション</light_purple>"
-      price: 50
-      amount: 1
-      lore:
-        - "<yellow>価格: 300G</yellow>"
+      icon: POTION
+      name: "<lime>ポーション</lime>"
+      items:
+        potion:
+          slot: 16
+          material: POTION
+          name: "回復ポーション"
+          dispColor: "light_purple"
+          dispLabel: "<#dispColor#>#name#</#dispColor#>"
+          price: 50
+          amount: 1
+          lore:
+            - "<yellow>価格: #price#G</yellow>"
 
-    heal_ticket:
-      slot: 20
-      type: COMMAND
-      material: PAPER
-      name: "<green>回復券</green>"
-      price: 250
-      amount: 1
-      lore:
-        - "<yellow>価格: 250G</yellow>"
-        - "<gray>購入すると即時回復します</gray>"
-      commands:
-        - "effect give %player% minecraft:instant_health 1 1"
-        - "effect give %player% minecraft:regeneration 10 1"
-    vip_sword:
-      slot: 22
-      type: ITEM
-      material: DIAMOND_SWORD
-      name: "<aqua>VIP専用剣</aqua>"
-      price: 1000
-      amount: 1
-      permission: "rpg.shop.vip"
-      lore:
-        - "<yellow>価格: 1000G</yellow>"
-        - "<aqua>VIP専用商品</aqua>"
-    starter_set:
-      slot: 24
-      type: COMMAND
-      material: CHEST
-      name: "<green>初心者セット</green>"
-      price: 0
-      amount: 1
-      limit: 1
-      lore:
-        - "<yellow>価格: 0G</yellow>"
-        - "<gray>1回だけ購入できます</gray>"
-      commands:
-        - "give %player% minecraft:bread 16"
-        - "give %player% minecraft:stone_sword 1"
+    special:
+      slot: 28
+      icon: CHEST
+      name: "<green>特殊</green>"
+      items:
+        heal_ticket:
+          slot: 20
+          type: COMMAND
+          material: PAPER
+          name: "回復券"
+          dispColor: "green"
+          dispLabel: "<#dispColor#>#name#</#dispColor#>"
+          price: 250
+          amount: 1
+          lore:
+            - "<yellow>価格: 250G</yellow>"
+            - "<gray>購入すると即時回復します</gray>"
+          commands:
+            - "effect give %player% minecraft:instant_health 1 1"
+            - "effect give %player% minecraft:regeneration 10 1"
+
+        starter_set:
+          slot: 24
+          type: COMMAND
+          material: CHEST
+          name: "初心者セット"
+          dispColor: "green"
+          dispLabel: "<#dispColor#>#name#</#dispColor#>"
+          price: 0
+          amount: 1
+          limit: 1
+          lore:
+            - "<yellow>価格: #price#G</yellow>"
+            - "<gray>1回だけ購入できます</gray>"
+          commands:
+            - "give %player% minecraft:bread 16"
+            - "give %player% minecraft:stone_sword 1"

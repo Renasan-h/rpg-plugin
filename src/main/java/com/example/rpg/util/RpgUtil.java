@@ -1,20 +1,30 @@
 package com.example.rpg.util;
 
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 
+/**
+ * Rpg関連におけるUtilityをまとめるクラス
+ */
 public class RpgUtil {
 
-    public static int getConfigInt(FileConfiguration config, String path, int def) {
-        return config.isInt(path) ? config.getInt(path) : def;
-    }
-
+    /**
+     * 指定されたセクションから指定したキーをもとに値を取得し、返却する
+     *
+     * @param section 設定ファイルのセクション情報
+     * @param path    セクションに存在するキー
+     * @param def     デフォルト値
+     * @return {@link int} 取得した値
+     */
     public static int getIntOrDefault(ConfigurationSection section, String path, int def) {
         int value;
         if (section.isInt(path)) {
             value = section.getInt(path);
         } else {
-            value = def;
+            try {
+                value = Integer.parseInt(section.getString(path));
+            } catch (NumberFormatException e) {
+                value = def;
+            }
         }
 
         return value;

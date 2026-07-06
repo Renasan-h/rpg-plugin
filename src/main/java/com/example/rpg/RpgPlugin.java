@@ -11,7 +11,7 @@ import com.example.rpg.service.ExpService;
 import com.example.rpg.service.MoneyService;
 import com.example.rpg.service.ShopPurchaseService;
 import com.example.rpg.service.ShopService;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import com.example.rpg.util.MessageUtil;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -19,7 +19,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class RpgPlugin extends JavaPlugin implements Listener {
 
-    private final MiniMessage mm = MiniMessage.miniMessage();
     private ShopRepository shopRepository;
     private ShopPurchaseService shopPurchaseService;
     private MoneyService moneyService;
@@ -37,7 +36,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         shopRepository.load(getConfig());
         ShopMenu shopMenu = new ShopMenu(shopRepository);
 
-        ShopService shopService = new ShopService(shopRepository, shopPurchaseService, moneyService);
+        ShopService shopService = new ShopService(shopRepository, shopPurchaseService, moneyService, shopMenu);
 
 
         // 実行Lister・コマンドの登録
@@ -46,7 +45,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new BlockBreakListener(), this);
         getServer().getPluginManager().registerEvents(new EntityKillListener(moneyService, expService), this);
 
-        getCommand("shop").setExecutor(new ShopCommand(shopMenu));
+        getCommand("shop").setExecutor(new ShopCommand(shopMenu, shopService));
         getServer().getPluginManager().registerEvents(new ShopListener(shopService), this);
 
         MoneyCommand moneyCommand = new MoneyCommand(moneyService);
@@ -56,6 +55,11 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         getCommand("exp").setExecutor(new ExpCommand(expService));
 
         getCommand("rpg").setExecutor(new RpgCommand(this));
+
+        ShopAdminCommand shopAdminCommand = new ShopAdminCommand(shopPurchaseService);
+        getCommand("shopadmin").setExecutor(shopAdminCommand);
+        getCommand("shopadmin").setTabCompleter(shopAdminCommand);
+
         getLogger().info("RpgPlugin enabled.");
     }
 
@@ -81,19 +85,19 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         var player = event.getPlayer();
 
-        player.sendMessage(mm.deserialize(
+        player.sendMessage(MessageUtil.mm(
                 "<gradient:#00ffff:#ff00ff>==============================</gradient>"
         ));
 
-        player.sendMessage(mm.deserialize(
+        player.sendMessage(MessageUtil.mm(
                 "<gold>ようこそ、</gold><aqua>" + player.getName() + "</aqua><rainbow>（" + player.getUniqueId() + "）</rainbow><gold> さん！</gold>"
         ));
 
-        player.sendMessage(mm.deserialize(
+        player.sendMessage(MessageUtil.mm(
                 "<yellow>Lv." + player.getLevel() + "</yellow> <red>HP 100</red> <blue>MP 50</blue> <green>Money 0G</green>"
         ));
 
-        player.sendMessage(mm.deserialize(
+        player.sendMessage(MessageUtil.mm(
                 "<gradient:#00ffff:#ff00ff>==============================</gradient>"
         ));
     }

@@ -1,7 +1,7 @@
 package com.example.rpg.command;
 
 import com.example.rpg.service.MoneyService;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import com.example.rpg.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -15,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public class PayCommand implements CommandExecutor {
 
-    private final MiniMessage mm = MiniMessage.miniMessage();
     private final MoneyService moneyService;
 
     public PayCommand(MoneyService moneyService) {
@@ -30,30 +29,24 @@ public class PayCommand implements CommandExecutor {
             @NotNull String[] args) {
 
         if (!(sender instanceof Player fromPlayer)) {
-            sender.sendMessage(mm.deserialize("<red>このコマンドはプレイヤーのみ実行できます。</red>"));
+            sender.sendMessage(MessageUtil.red("このコマンドはプレイヤーのみ実行できます。"));
             return true;
         }
 
         if (args.length != 2) {
-            fromPlayer.sendMessage(mm.deserialize(
-                    "<red>使い方： /pay <player> <amount></red>"
-            ));
+            fromPlayer.sendMessage(MessageUtil.red("使い方： /pay <player> <amount>"));
             return true;
         }
 
         Player toPlayer = Bukkit.getPlayerExact(args[0]);
 
         if (toPlayer == null) {
-            fromPlayer.sendMessage(mm.deserialize(
-                    "<red>指定したプレイヤーが見つかりません。</red>"
-            ));
+            fromPlayer.sendMessage(MessageUtil.red("指定したプレイヤーが見つかりません。"));
             return true;
         }
 
         if (fromPlayer.getUniqueId().equals(toPlayer.getUniqueId())) {
-            fromPlayer.sendMessage(mm.deserialize(
-                    "<red>自分自身には送金できません。</red>"
-            ));
+            fromPlayer.sendMessage(MessageUtil.red("自分自身には送金できません。"));
             return true;
         }
 
@@ -62,32 +55,26 @@ public class PayCommand implements CommandExecutor {
         try {
             amount = Integer.parseInt(args[1]);
         } catch (NumberFormatException e) {
-            fromPlayer.sendMessage(mm.deserialize(
-                    "<red>金額は数値で入力してください。</red>"
-            ));
+            fromPlayer.sendMessage(MessageUtil.red("金額は数値で入力してください。"));
             return true;
         }
 
         if (amount < 0) {
-            fromPlayer.sendMessage(mm.deserialize(
-                    "<red>金額は1以上を指定してください。</red>"
-            ));
+            fromPlayer.sendMessage(MessageUtil.red("金額は1以上を指定してください。"));
             return true;
         }
 
         boolean success = moneyService.removeMoney(fromPlayer.getUniqueId(), amount);
 
         if (!success) {
-            fromPlayer.sendMessage(mm.deserialize(
-                    "<red>所持金が足りません。</red>"
-            ));
+            fromPlayer.sendMessage(MessageUtil.red("所持金が足りません。"));
             return true;
         }
 
-        int receiverMoney = moneyService.addMoney(toPlayer.getUniqueId(), amount);
+        moneyService.addMoney(toPlayer.getUniqueId(), amount);
         int senderMoney = moneyService.getMoney(fromPlayer.getUniqueId());
 
-        fromPlayer.sendMessage(mm.deserialize("""
+        fromPlayer.sendMessage(MessageUtil.mm("""
                 <gold>%s</gold><yellow> に </yellow><gold>%dG</gold><yellow> 送金しました。</yellow>
                 <gray>残高: %dG</gray>""".formatted(toPlayer.getName(), amount, senderMoney)
         ));

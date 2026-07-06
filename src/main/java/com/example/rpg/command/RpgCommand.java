@@ -1,6 +1,6 @@
 package com.example.rpg.command;
 
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import com.example.rpg.util.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 public class RpgCommand implements CommandExecutor, TabCompleter {
 
     private final JavaPlugin plugin;
-    private final MiniMessage mm = MiniMessage.miniMessage();
 
     public RpgCommand(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -29,17 +28,17 @@ public class RpgCommand implements CommandExecutor, TabCompleter {
     ) {
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
             if (!sender.hasPermission("rpg.admin")) {
-                sender.sendMessage(mm.deserialize("<red>権限がありません。</red>"));
+                sender.sendMessage(MessageUtil.red("権限がありません。"));
                 return false;
             }
 
             plugin.reloadConfig();
 
-            sender.sendMessage(mm.deserialize("<green>RpgPlugin の config.yml を再読み込みしました。</green>"));
+            sender.sendMessage(MessageUtil.green("RpgPlugin の config.yml を再読み込みしました。"));
             return true;
         }
 
-        sender.sendMessage(mm.deserialize("<red>使い方： /rpg reload</red>"));
+        sender.sendMessage(MessageUtil.red("使い方： /rpg reload"));
         return false;
     }
 

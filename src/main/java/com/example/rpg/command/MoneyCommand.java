@@ -1,7 +1,7 @@
 package com.example.rpg.command;
 
 import com.example.rpg.service.MoneyService;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import com.example.rpg.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
  */
 public class MoneyCommand implements CommandExecutor, TabCompleter {
 
-    private final MiniMessage mm = MiniMessage.miniMessage();
     private final MoneyService moneyService;
 
     public MoneyCommand(MoneyService moneyService) {
@@ -51,7 +50,7 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
         }
 
 
-        sender.sendMessage(mm.deserialize(
+        sender.sendMessage(MessageUtil.mm(
                 "<red>使い方: /money, /money [add,set, remove] <player> <amount></red>"
         ));
         return true;
@@ -97,7 +96,7 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
 
         int money = moneyService.getMoney(player.getUniqueId());
 
-        player.sendMessage(mm.deserialize("<yellow>現在の所持金：</yellow><gold>" + NumberFormat.getNumberInstance().format(money) + "G</gold>"));
+        player.sendMessage(MessageUtil.mm("<yellow>現在の所持金：</yellow><gold>" + NumberFormat.getNumberInstance().format(money) + "G</gold>"));
 
         return true;
     }
@@ -111,14 +110,14 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
      */
     private boolean addMoney(CommandSender sender, String[] args) {
         if (!sender.hasPermission("rpg.money.admin")) {
-            sender.sendMessage(mm.deserialize("<red>権限がありません。</red>"));
+            sender.sendMessage(MessageUtil.red("権限がありません。"));
             return false;
         }
 
         Player target = Bukkit.getPlayerExact(args[1]);
 
         if (target == null) {
-            sender.sendMessage(mm.deserialize("<red>指定したプレイヤーが見つかりません。</red>"));
+            sender.sendMessage(MessageUtil.red("指定したプレイヤーが見つかりません。"));
             return false;
         }
 
@@ -129,7 +128,7 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
 
         int total = moneyService.addMoney(target.getUniqueId(), amount);
 
-        sender.sendMessage(mm.deserialize("""
+        sender.sendMessage(MessageUtil.mm("""
                 <gold>%s</gold><yellow> に </yellow><gold>%dG</gold><yellow> 追加しました。</yellow> <gray>残高: %dG</gray>""".formatted(target.getName(), amount, total)
         ));
 
@@ -145,14 +144,14 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
      */
     private boolean setMoney(CommandSender sender, String[] args) {
         if (!sender.hasPermission("rpg.money.admin")) {
-            sender.sendMessage(mm.deserialize("<red>権限がありません。</red>"));
+            sender.sendMessage(MessageUtil.red("権限がありません。"));
             return false;
         }
 
         Player target = Bukkit.getPlayerExact(args[1]);
 
         if (target == null) {
-            sender.sendMessage(mm.deserialize("<red>指定したプレイヤーが見つかりません。</red>"));
+            sender.sendMessage(MessageUtil.red("指定したプレイヤーが見つかりません。"));
             return false;
         }
 
@@ -163,11 +162,11 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
 
         int total = moneyService.setMoney(target.getUniqueId(), amount);
 
-        sender.sendMessage(mm.deserialize(
+        sender.sendMessage(MessageUtil.mm(
                 "<gold>" + target.getName() + "</gold><yellow> の所持金を </yellow><gold>" + total + "G</gold><yellow> に設定しました。</yellow>"
         ));
 
-        target.sendMessage(mm.deserialize(
+        target.sendMessage(MessageUtil.mm(
                 "<yellow>所持金が </yellow><gold>" + total + "G</gold><yellow> に設定されました。</yellow>"
         ));
 
@@ -183,14 +182,14 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
      */
     private boolean removeMoney(CommandSender sender, String[] args) {
         if (!sender.hasPermission("rpg.money.admin")) {
-            sender.sendMessage(mm.deserialize("<red>権限がありません。</red>"));
+            sender.sendMessage(MessageUtil.red("権限がありません。"));
             return false;
         }
 
         Player target = Bukkit.getPlayerExact(args[1]);
 
         if (target == null) {
-            sender.sendMessage(mm.deserialize("<red>指定したプレイヤーが見つかりません。</red>"));
+            sender.sendMessage(MessageUtil.red("指定したプレイヤーが見つかりません。"));
             return false;
         }
 
@@ -202,17 +201,17 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
         boolean success = moneyService.removeMoney(target.getUniqueId(), amount);
 
         if (!success) {
-            sender.sendMessage(mm.deserialize("<red>対象プレイヤーの所持金が足りません。</red>"));
+            sender.sendMessage(MessageUtil.red("対象プレイヤーの所持金が足りません。"));
             return false;
         }
 
         int total = moneyService.getMoney(target.getUniqueId());
 
-        sender.sendMessage(mm.deserialize(
+        sender.sendMessage(MessageUtil.mm(
                 "<gold>" + target.getName() + "</gold><yellow> から </yellow><gold>" + amount + "G</gold><yellow> 減らしました。</yellow> <gray>残高: " + total + "G</gray>"
         ));
 
-        target.sendMessage(mm.deserialize(
+        target.sendMessage(MessageUtil.mm(
                 "<gold>" + amount + "G</gold><yellow> 減少しました。</yellow> <gray>残高: " + total + "G</gray>"
         ));
 
@@ -235,7 +234,7 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
         }
 
         if (amount < min) {
-            sender.sendMessage(mm.deserialize("<red>金額は0以上を指定してください。</red>"));
+            sender.sendMessage(MessageUtil.red("金額は0以上を指定してください。"));
             return -1;
         }
 

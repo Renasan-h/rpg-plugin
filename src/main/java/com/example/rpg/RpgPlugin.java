@@ -22,10 +22,8 @@ import java.util.Objects;
 
 public class RpgPlugin extends JavaPlugin implements Listener {
 
-    private ShopRepository shopRepository;
     private ShopPurchaseService shopPurchaseService;
     private MoneyService moneyService;
-    private ExpService expService;
 
 
     @Override
@@ -33,9 +31,9 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         saveDefaultConfig();
         saveResource("config.yml", true); // true = 上書き
         this.moneyService = new MoneyService(this);
-        this.expService = new ExpService();
         this.shopPurchaseService = new ShopPurchaseService(this);
-        shopRepository = new ShopRepository();
+        ExpService expService = new ExpService();
+        ShopRepository shopRepository = new ShopRepository();
         shopRepository.load(getConfig());
         ShopMenu shopMenu = new ShopMenu(shopRepository);
 

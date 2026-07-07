@@ -16,7 +16,7 @@ public class CategoryMenuHolder implements InventoryHolder {
      * Interface method
      *
      * @return この実装では返却しない
-     * @throws UnsupportedOperationException
+     * @throws UnsupportedOperationException 実行できない操作を行った
      */
     @Override
     public @NotNull Inventory getInventory() {

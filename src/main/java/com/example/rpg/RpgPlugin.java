@@ -18,6 +18,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Objects;
+
 public class RpgPlugin extends JavaPlugin implements Listener {
 
     private ShopRepository shopRepository;
@@ -60,16 +62,16 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new EntityKillListener(moneyService, expService), this);
 
         MoneyCommand moneyCommand = new MoneyCommand(moneyService);
-        getCommand("money").setExecutor(new MoneyCommand(moneyService));
-        getCommand("money").setTabCompleter(new MoneyCommand(moneyService));
-        getCommand("pay").setExecutor(new PayCommand(moneyService));
-        getCommand("exp").setExecutor(new ExpCommand(expService));
+        Objects.requireNonNull(getCommand("money")).setExecutor(moneyCommand);
+        Objects.requireNonNull(getCommand("money")).setTabCompleter(moneyCommand);
+        Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(moneyService));
+        Objects.requireNonNull(getCommand("exp")).setExecutor(new ExpCommand(expService));
 
-        getCommand("rpg").setExecutor(new RpgCommand(this));
+        Objects.requireNonNull(getCommand("rpg")).setExecutor(new RpgCommand(this));
 
         ShopAdminCommand shopAdminCommand = new ShopAdminCommand(shopPurchaseService);
-        getCommand("shopadmin").setExecutor(shopAdminCommand);
-        getCommand("shopadmin").setTabCompleter(shopAdminCommand);
+        Objects.requireNonNull(getCommand("shopadmin")).setExecutor(shopAdminCommand);
+        Objects.requireNonNull(getCommand("shopadmin")).setTabCompleter(shopAdminCommand);
 
         getLogger().info("RpgPlugin enabled.");
     }

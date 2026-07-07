@@ -39,11 +39,6 @@ public class ShopMenu {
         this.shopRepository = shopRepository;
     }
 
-
-    public static String itemTitlePrefix() {
-        return ITEM_TITLE_PREFIX;
-    }
-
     /**
      * SHOPカテゴリ一覧画面を開く。
      *

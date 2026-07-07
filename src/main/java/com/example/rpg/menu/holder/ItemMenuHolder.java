@@ -41,7 +41,7 @@ public class ItemMenuHolder implements InventoryHolder {
      * このメソッドが呼ばれた場合は例外を投げる
      *
      * @return この実装では返却しない
-     * @throws UnsupportedOperationException
+     * @throws UnsupportedOperationException 実行できない操作を行った
      */
     @Override
     public @NotNull Inventory getInventory() {

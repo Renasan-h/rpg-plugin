@@ -1,21 +1,33 @@
 package com.example.rpg.listener;
 
-import com.example.rpg.service.ShopService;
+import com.example.rpg.facade.ShopFacade;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 
 public class ShopListener implements Listener {
 
-    private final String REP_COMMAND_PLAYER = "%player%";
-    private final ShopService shopService;
+    /**
+     * SHOP機能の入口。
+     */
+    private final ShopFacade shopFacade;
 
-    public ShopListener(ShopService shopService) {
-        this.shopService = shopService;
+    /**
+     * SHOP Listenerを生成する。
+     *
+     * @param shopFacade SHOP Facade
+     */
+    public ShopListener(ShopFacade shopFacade) {
+        this.shopFacade = shopFacade;
     }
 
+    /**
+     * SHOP GUIクリック時の処理。
+     *
+     * @param event インベントリクリックイベント
+     */
     @EventHandler
     public void onClick(InventoryClickEvent event) {
-        shopService.handleClick(event);
+        shopFacade.handleClick(event);
     }
 }

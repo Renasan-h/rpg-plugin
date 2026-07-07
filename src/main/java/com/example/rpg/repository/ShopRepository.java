@@ -152,6 +152,81 @@ public class ShopRepository extends AbstractRepository<ShopItemDto> {
         );
     }
 
+    /**
+     * カテゴリIDからSHOPカテゴリを取得する。
+     *
+     * <p>カテゴリの保持形式をRepository内部へ閉じ込めることで、
+     * 将来DB化しても呼び出し側の変更を最小化する。</p>
+     *
+     * @param categoryId カテゴリID
+     * @return カテゴリ。存在しない場合はnull
+     */
+    public ShopCategoryDto findCategoryById(String categoryId) {
+        return shop.getCategories().get(categoryId);
+    }
+
+    /**
+     * 表示スロットからSHOPカテゴリを取得する。
+     *
+     * <p>GUI上の配置とカテゴリ定義の対応はRepositoryが把握する。
+     * Facadeは「探し方」ではなく「見つかった後の画面遷移」に集中させる。</p>
+     *
+     * @param slot GUIスロット番号
+     * @return カテゴリ。存在しない場合はnull
+     */
+    public ShopCategoryDto findCategoryBySlot(int slot) {
+        return shop.getCategories()
+                .values()
+                .stream()
+                .filter(category -> category.getSlot() == slot)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * カテゴリIDと表示スロットからSHOP商品を取得する。
+     *
+     * <p>商品探索処理をRepositoryに集約し、FacadeがDTOのMap構造へ依存しないようにする。</p>
+     *
+     * @param categoryId カテゴリID
+     * @param slot       GUIスロット番号
+     * @return 商品。存在しない場合はnull
+     */
+    public ShopItemDto findItemBySlot(String categoryId, int slot) {
+        ShopCategoryDto category = findCategoryById(categoryId);
+
+        if (category == null) {
+            return null;
+        }
+
+        return category.getItems()
+                .values()
+                .stream()
+                .filter(item -> item.getSlot() == slot)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Materialから売却可能なSHOP商品を取得する。
+     *
+     * <p>売却対象の検索はSHOP定義全体を横断するため、
+     * ServiceではなくRepositoryに閉じ込める。</p>
+     *
+     * @param material Bukkit Material
+     * @return 売却可能商品。存在しない場合はnull
+     */
+    public ShopItemDto findSellableItem(Material material) {
+        return shop.getCategories()
+                .values()
+                .stream()
+                .flatMap(category -> category.getItems().values().stream())
+                .filter(ShopItemDto::isSellable)
+                .filter(item -> item.getMaterial() == material)
+                .findFirst()
+                .orElse(null);
+    }
+
     public ShopDto getShop() {
         return shop;
     }

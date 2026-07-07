@@ -1,102 +1,63 @@
 package com.example.rpg.service;
 
 import com.example.rpg.constants.ShopServiceConst;
-import com.example.rpg.dto.ShopCategoryDto;
-import com.example.rpg.dto.ShopDto;
 import com.example.rpg.dto.ShopItemDto;
-import com.example.rpg.menu.ShopMenu;
 import com.example.rpg.repository.ShopRepository;
 import com.example.rpg.util.MessageUtil;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
+/**
+ * SHOPの購入・売却などの業務処理を担当するService。
+ *
+ * <p>GUIの生成は {@code ShopMenu}、コマンドやイベントからの入口はFacadeが担当する。
+ * このServiceは、購入可否判定・所持金操作・購入回数制限・売却処理に責務を限定する。</p>
+ */
 public class ShopService {
 
+    /**
+     * SHOP商品情報の取得元。
+     */
     private final ShopRepository shopRepository;
-    private final ShopPurchaseService shopPurchaseService;
-    private final MoneyService moneyService;
-    private final ShopMenu shopMenu;
 
+    /**
+     * 購入回数管理Service。
+     */
+    private final ShopPurchaseService shopPurchaseService;
+
+    /**
+     * 所持金管理Service。
+     */
+    private final MoneyService moneyService;
+
+    /**
+     * コンストラクタ。
+     *
+     * @param shopRepository      SHOP商品Repository
+     * @param shopPurchaseService 購入回数管理Service
+     * @param moneyService        所持金管理Service
+     */
     public ShopService(
             ShopRepository shopRepository,
             ShopPurchaseService shopPurchaseService,
-            MoneyService moneyService,
-            ShopMenu shopMenu
+            MoneyService moneyService
     ) {
         this.shopRepository = shopRepository;
         this.shopPurchaseService = shopPurchaseService;
         this.moneyService = moneyService;
-        this.shopMenu = shopMenu;
     }
 
-    public void handleClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-
-        if (event.getClickedInventory() == null) {
-            return;
-        }
-
-        if (event.getRawSlot() >= event.getView().getTopInventory().getSize()) {
-            return;
-        }
-
-        if (isCategoryMenu(event)) {
-            event.setCancelled(true);
-            handleCategoryClick(player, event);
-            return;
-        }
-
-        ShopCategoryDto category = findCategoryByTitle(event);
-
-        if (category != null) {
-            event.setCancelled(true);
-            handleItemClick(player, event, category);
-        }
-    }
-
-    private boolean isCategoryMenu(InventoryClickEvent event) {
-        return event.getView().title().equals(MessageUtil.mm(ShopMenu.categoryTitle()));
-    }
-
-    private void handleCategoryClick(Player player, InventoryClickEvent event) {
-        ItemStack clicked = event.getCurrentItem();
-
-        if (clicked == null || clicked.getType() == Material.AIR) {
-            return;
-        }
-
-        int clickedSlot = event.getRawSlot();
-
-        ShopCategoryDto category = findCategoryBySlot(clickedSlot);
-
-        if (category == null) {
-            return;
-        }
-
-        shopMenu.openCategory(player, category);
-    }
-
-    private void handleItemClick(Player player, InventoryClickEvent event, ShopCategoryDto category) {
-        ItemStack clicked = event.getCurrentItem();
-
-        if (clicked == null || clicked.getType() == Material.AIR) {
-            return;
-        }
-
-        ShopItemDto shopItem = findItemBySlot(category, event.getRawSlot());
-
-        if (shopItem == null) {
-            return;
-        }
-
-        buy(player, shopItem);
-    }
-
-    private void buy(Player player, ShopItemDto shopItem) {
+    /**
+     * 商品購入処理を実行する。
+     *
+     * <p>購入制限・所持金不足・インベントリ空きチェックをまとめて扱う。
+     * 購入可否判定は必ず決済前に行い、返金処理が必要にならない順序にしている。</p>
+     *
+     * @param player   購入者
+     * @param shopItem 購入対象商品
+     */
+    public void buy(Player player, ShopItemDto shopItem) {
         if (player.getInventory().firstEmpty() == -1 && !shopItem.isCommandItem()) {
             player.sendMessage(MessageUtil.red("インベントリに空きがありません。"));
             return;
@@ -141,49 +102,13 @@ public class ShopService {
         ));
     }
 
-    private ShopCategoryDto findCategoryBySlot(int slot) {
-        return shopRepository.getShop()
-                .getCategories()
-                .values()
-                .stream()
-                .filter(category -> category.getSlot() == slot)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private ShopCategoryDto findCategoryByTitle(InventoryClickEvent event) {
-        for (ShopCategoryDto category : shopRepository.getShop().getCategories().values()) {
-            if (event.getView().title().equals(MessageUtil.mm(ShopMenu.itemTitlePrefix() + category.getName()))) {
-                return category;
-            }
-        }
-
-        return null;
-    }
-
-    private ShopItemDto findItemBySlot(ShopCategoryDto category, int slot) {
-        return category.getItems()
-                .values()
-                .stream()
-                .filter(item -> item.getSlot() == slot)
-                .findFirst()
-                .orElse(null);
-    }
-
-    private ShopItemDto findSellableItem(Material material) {
-        ShopDto shop = shopRepository.getShop();
-
-        return shop.getCategories()
-                .values()
-                .stream()
-                .flatMap(category -> category.getItems().values().stream())
-                .filter(ShopItemDto::isSellable)
-                .filter(item -> item.getMaterial() == material)
-                .findFirst()
-                .orElse(null);
-    }
-
-    public boolean sellHeldItem(Player player) {
+    /**
+     * 手に持っているアイテムを1個売却する。
+     *
+     * @param player 売却者
+     * @return コマンド処理完了ならtrue
+     */
+    public boolean sellHandItem(Player player) {
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
 
         if (itemInHand.getType() == Material.AIR) {
@@ -191,7 +116,7 @@ public class ShopService {
             return true;
         }
 
-        ShopItemDto shopItem = findSellableItem(itemInHand.getType());
+        ShopItemDto shopItem = shopRepository.findSellableItem(itemInHand.getType());
 
         if (shopItem == null) {
             player.sendMessage(MessageUtil.red("このアイテムは売却できません。"));
@@ -214,6 +139,12 @@ public class ShopService {
         return true;
     }
 
+    /**
+     * ITEM商品を購入者のインベントリへ追加する。
+     *
+     * @param player   購入者
+     * @param shopItem 商品定義
+     */
     private void buyItem(Player player, ShopItemDto shopItem) {
         ItemStack itemStack = new ItemStack(
                 shopItem.getMaterial(),
@@ -223,6 +154,12 @@ public class ShopService {
         player.getInventory().addItem(itemStack);
     }
 
+    /**
+     * COMMAND商品のコマンドをコンソール権限で実行する。
+     *
+     * @param player   購入者
+     * @param shopItem 商品定義
+     */
     private void buyCommands(Player player, ShopItemDto shopItem) {
         for (String command : shopItem.getCommands()) {
             String parsedCommand = command.replace(ShopServiceConst.REP_COMMAND_PLAYER, player.getName());
@@ -232,32 +169,5 @@ public class ShopService {
                     parsedCommand
             );
         }
-    }
-
-    public boolean sellHandItem(Player player) {
-        ItemStack itemInHand = player.getInventory().getItemInMainHand();
-
-        if (itemInHand.getType() == Material.AIR) {
-            player.sendMessage(MessageUtil.red("売却するアイテムを手に持ってください。"));
-            return false;
-        }
-
-        ShopItemDto shopItem = findSellableItem(itemInHand.getType());
-
-        if (shopItem == null) {
-            player.sendMessage(MessageUtil.red("このアイテムは売却できません。"));
-            return false;
-        }
-
-        int sellAmount = 1;
-        int totalPrice = shopItem.getSellPrice() * sellAmount;
-
-        itemInHand.setAmount(itemInHand.getAmount() - sellAmount);
-        moneyService.addMoney(player.getUniqueId(), totalPrice);
-
-        player.sendMessage(MessageUtil.mm("<yellow>売却しました：</yellow>" + " <gray>x" + sellAmount + "</gray>" +
-                " <gold>+" + totalPrice + "G</gold>"));
-
-        return true;
     }
 }

@@ -3,6 +3,8 @@ package com.example.rpg.menu;
 import com.example.rpg.dto.ShopCategoryDto;
 import com.example.rpg.dto.ShopDto;
 import com.example.rpg.dto.ShopItemDto;
+import com.example.rpg.menu.holder.CategoryMenuHolder;
+import com.example.rpg.menu.holder.ItemMenuHolder;
 import com.example.rpg.repository.ShopRepository;
 import com.example.rpg.util.MessageUtil;
 import org.bukkit.Bukkit;
@@ -13,27 +15,45 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 public class ShopMenu {
 
-    private static final String CATEGORY_TILE = "<gold>RPG SHOP</gold>";
-    private static final String ITEM_TITLE_PREFIX = "<gold>RPG SHOP</gold> <gray>-</gray>";
+    /**
+     * カテゴリ一覧画面のタイトル。
+     */
+    private static final String CATEGORY_TITLE = "<gold>RPG SHOP</gold>";
 
+    /**
+     * 商品一覧画面タイトルの接頭辞。
+     */
+    private static final String ITEM_TITLE_PREFIX = "<gold>RPG SHOP</gold> <gray>-</gray> ";
+
+    /**
+     * SHOP設定情報の取得元。
+     */
     private final ShopRepository shopRepository;
 
+    /**
+     * コンストラクタ。
+     *
+     * @param shopRepository SHOP設定Repository
+     */
     public ShopMenu(ShopRepository shopRepository) {
         this.shopRepository = shopRepository;
     }
 
-    public static String categoryTitle() {
-        return CATEGORY_TILE;
-    }
 
     public static String itemTitlePrefix() {
         return ITEM_TITLE_PREFIX;
     }
 
+    /**
+     * SHOPカテゴリ一覧画面を開く。
+     *
+     * @param player 表示対象プレイヤー
+     */
     public void open(Player player) {
         ShopDto shop = shopRepository.getShop();
 
-        Inventory inventory = Bukkit.createInventory(null, shop.getSize(), MessageUtil.mm(CATEGORY_TILE));
+        Inventory inventory = Bukkit.createInventory(
+                new CategoryMenuHolder(), shop.getSize(), MessageUtil.mm(CATEGORY_TITLE));
 
         for (ShopCategoryDto category : shop.getCategories().values()) {
             ItemStack icon = new ItemStack(category.getIcon());
@@ -49,22 +69,22 @@ public class ShopMenu {
     }
 
     /**
-     * ショップカテゴリ一覧を開く
+     * 指定カテゴリの商品一覧画面を開く。
      *
-     * @param player   操作プレイヤー情報
-     * @param category ショップカテゴリ情報
+     * @param player   表示対象プレイヤー
+     * @param category 表示対象カテゴリ
      */
     public void openCategory(Player player, ShopCategoryDto category) {
         ShopDto shop = shopRepository.getShop();
 
         Inventory inventory = Bukkit.createInventory(
-                null,
+                new ItemMenuHolder(category.getId()),
                 shop.getSize(),
                 MessageUtil.mm(ITEM_TITLE_PREFIX + category.getName())
         );
 
         for (ShopItemDto item : category.getItems().values()) {
-            // 表示対象のアイテムに権限が付与されていた場合は、プレイヤーの権限を確認する
+            // 権限付き商品は、権限を持つプレイヤーにだけ表示する。
             if (!item.getPermission().isEmpty() && !player.hasPermission(item.getPermission())) {
                 continue;
             }
@@ -78,6 +98,8 @@ public class ShopMenu {
             itemStack.setItemMeta(meta);
             inventory.setItem(item.getSlot(), itemStack);
         }
+
+        player.openInventory(inventory);
     }
 
 }

@@ -1,6 +1,7 @@
 package com.example.rpg;
 
 import com.example.rpg.command.*;
+import com.example.rpg.facade.ShopFacade;
 import com.example.rpg.listener.BlockBreakListener;
 import com.example.rpg.listener.EntityKillListener;
 import com.example.rpg.listener.ServerPingListener;
@@ -36,7 +37,20 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         shopRepository.load(getConfig());
         ShopMenu shopMenu = new ShopMenu(shopRepository);
 
-        ShopService shopService = new ShopService(shopRepository, shopPurchaseService, moneyService, shopMenu);
+        ShopService shopService = new ShopService(
+                shopRepository,
+                shopPurchaseService,
+                moneyService
+        );
+
+        ShopFacade shopFacade = new ShopFacade(
+                shopRepository,
+                shopMenu,
+                shopService
+        );
+
+        getCommand("shop").setExecutor(new ShopCommand(shopFacade));
+        getServer().getPluginManager().registerEvents(new ShopListener(shopFacade), this);
 
 
         // 実行Lister・コマンドの登録
@@ -44,9 +58,6 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(new ServerPingListener(), this);
         getServer().getPluginManager().registerEvents(new BlockBreakListener(), this);
         getServer().getPluginManager().registerEvents(new EntityKillListener(moneyService, expService), this);
-
-        getCommand("shop").setExecutor(new ShopCommand(shopMenu, shopService));
-        getServer().getPluginManager().registerEvents(new ShopListener(shopService), this);
 
         MoneyCommand moneyCommand = new MoneyCommand(moneyService);
         getCommand("money").setExecutor(new MoneyCommand(moneyService));

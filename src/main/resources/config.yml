@@ -1,5 +1,6 @@
 shop:
   title: "<gold>RPG SHOP</gold>"
+  # sizeは9の倍数であること
   size: 45
 
   categories:
@@ -71,7 +72,7 @@ shop:
     potion:
       slot: 16
       icon: POTION
-      name: "<lime>ポーション</lime>"
+      name: "<#89F336>ポーション</#89F336>"
       items:
         potion:
           slot: 16

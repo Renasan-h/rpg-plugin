@@ -13,10 +13,42 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * SHOP定義を管理するRepository。
+ *
+ * <p>
+ * config.ymlからSHOP定義を読み込み、DTOへ変換して保持する。
+ * また、カテゴリや商品の検索機能を提供することで、
+ * 呼び出し側がDTOの内部構造（MapやListなど）へ依存しないよう責務を集約する。
+ * </p>
+ *
+ * <p>
+ * 将来的に設定ファイルからPostgreSQLなどの永続ストレージへ移行した場合でも、
+ * ServiceやFacadeはRepository経由で取得するだけとなり、
+ * データ取得方法の変更をRepository内へ閉じ込められる。
+ * </p>
+ */
 public class ShopRepository extends AbstractRepository<ShopItemDto> {
 
+    /**
+     * 読み込み済みのSHOP定義。
+     *
+     * <p>
+     * config.ymlの内容をDTOへ変換した結果を保持する。
+     * Repository内のみが保持し、外部から直接変更しないことを前提とする。
+     * </p>
+     */
     private ShopDto shop;
 
+    /**
+     * SHOP Repositoryを生成する。
+     *
+     * <p>
+     * インスタンス生成時にはデータを保持せず、
+     * {@link #load(FileConfiguration)} の実行によって
+     * SHOP定義を初期化する。
+     * </p>
+     */
     public ShopRepository() {
     }
 

@@ -51,7 +51,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 shopService
         );
 
-        getCommand("shop").setExecutor(new ShopCommand(shopFacade));
+        Objects.requireNonNull(getCommand("shop")).setExecutor(new ShopCommand(shopFacade));
         getServer().getPluginManager().registerEvents(new ShopListener(shopFacade), this);
 
 
@@ -113,9 +113,5 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         player.sendMessage(MessageUtil.mm(
                 "<gradient:#00ffff:#ff00ff>==============================</gradient>"
         ));
-    }
-
-    public ShopRepository getShopRepository() {
-        return shopRepository;
     }
 }

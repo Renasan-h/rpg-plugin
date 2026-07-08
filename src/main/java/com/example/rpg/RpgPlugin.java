@@ -36,61 +36,72 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
             throw new UnsupportedOperationException();
         }
-
-        // config.ymlの読み込み
         saveDefaultConfig();
-        saveResource("config.yml", true); // true = 上書き
 
-        // moneyRepositoryの生成
-        copyDefaultResourceIfMissing("money.yaml");
+        // ------------------------------
+        // Resource
+        // ------------------------------
+        copyResourceIfAbsent("config.yml");
+        copyResourceIfAbsent("money.yml");
+        copyResourceIfAbsent("shop-purchases.yml");
+        copyResourceIfAbsent("shop.yml");
+
+        // ------------------------------
+        // Repository
+        // ------------------------------
+        // TODO PostgreSQL対応時はRepository生成をFactoryへ移動する。
         this.moneyRepository = new MoneyRepository(this, new File(getDataFolder(), "money.yml"));
-
-        // shopPurchaseRepositoryの生成
-        copyDefaultResourceIfMissing("shop-purchases.yml");
         this.shopPurchaseRepository = new ShopPurchaseRepository(this, new File(getDataFolder(), "shop-purchases.yml"));
-
-        // shopRepositoryの生成
-        copyDefaultResourceIfMissing("shop.yml");
         IShopRepository shopRepository = new ShopRepository(
                 YamlConfiguration.loadConfiguration(new File(getDataFolder(), "shop.yml"))
         );
 
-        ShopMenu shopMenu = new ShopMenu(shopRepository);
-
+        // ------------------------------
+        // Service
+        // ------------------------------
         ShopService shopService = new ShopService(
                 shopRepository,
                 moneyRepository,
                 shopPurchaseRepository
         );
+        ExpService expService = new ExpService();
 
+        // ------------------------------
+        // Menu
+        // ------------------------------
+        ShopMenu shopMenu = new ShopMenu(shopRepository);
+
+        // ------------------------------
+        // Facade
+        // ------------------------------
         ShopGuiFacade shopGuiFacade = new ShopGuiFacade(
                 shopRepository,
                 shopMenu,
                 shopService
         );
 
+        // ------------------------------
+        // Command
+        // ------------------------------
+        Objects.requireNonNull(getCommand("rpg")).setExecutor(new RpgCommand(this));
+        MoneyCommand moneyCommand = new MoneyCommand(moneyRepository);
+        Objects.requireNonNull(getCommand("money")).setExecutor(moneyCommand);
+        Objects.requireNonNull(getCommand("money")).setTabCompleter(moneyCommand);
+        AdminCommand adminCommand = new AdminCommand(shopPurchaseRepository);
+        Objects.requireNonNull(getCommand("admin")).setExecutor(adminCommand);
+        Objects.requireNonNull(getCommand("admin")).setTabCompleter(adminCommand);
+        Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(moneyRepository));
+        Objects.requireNonNull(getCommand("exp")).setExecutor(new ExpCommand(expService));
         Objects.requireNonNull(getCommand("shop")).setExecutor(new ShopCommand(shopGuiFacade, shopService));
+
+        // ------------------------------
+        // Listener
+        // ------------------------------
         getServer().getPluginManager().registerEvents(new ShopListener(shopGuiFacade), this);
-
-        ExpService expService = new ExpService();
-
-        // 実行Lister・コマンドの登録
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new ServerPingListener(), this);
         getServer().getPluginManager().registerEvents(new BlockBreakListener(), this);
         getServer().getPluginManager().registerEvents(new EntityKillListener(moneyRepository, expService), this);
-
-        MoneyCommand moneyCommand = new MoneyCommand(moneyRepository);
-        Objects.requireNonNull(getCommand("money")).setExecutor(moneyCommand);
-        Objects.requireNonNull(getCommand("money")).setTabCompleter(moneyCommand);
-        Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(moneyRepository));
-        Objects.requireNonNull(getCommand("exp")).setExecutor(new ExpCommand(expService));
-
-        Objects.requireNonNull(getCommand("rpg")).setExecutor(new RpgCommand(this));
-
-        AdminCommand adminCommand = new AdminCommand(shopPurchaseRepository);
-        Objects.requireNonNull(getCommand("admin")).setExecutor(adminCommand);
-        Objects.requireNonNull(getCommand("admin")).setTabCompleter(adminCommand);
 
         getLogger().info("RpgPlugin enabled.");
     }
@@ -135,11 +146,16 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     }
 
     /**
-     * 指定されたconfigファイルを確認し、存在しない場合はテンプレートファイルをデータフォルダにコピーする
+     * デフォルト設定ファイルをコピーする。
      *
-     * @param fileName config file name
+     * <p>
+     * saveResource()はJAR内のresourcesからpluginDataへコピーする。
+     * 既存ファイルは上書きしたくないため存在確認を行う。
+     * </p>
+     *
+     * @param fileName Resource名
      */
-    public void copyDefaultResourceIfMissing(String fileName) {
+    private void copyResourceIfAbsent(String fileName) {
         File file = new File(getDataFolder(), fileName);
 
         if (file.exists()) {

@@ -5,7 +5,7 @@ import com.example.rpg.dto.ShopDto;
 import com.example.rpg.dto.ShopItemDto;
 import com.example.rpg.menu.holder.CategoryMenuHolder;
 import com.example.rpg.menu.holder.ItemMenuHolder;
-import com.example.rpg.repository.ShopRepository;
+import com.example.rpg.repository.interfaces.IShopRepository;
 import com.example.rpg.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -28,15 +28,15 @@ public class ShopMenu {
     /**
      * SHOP設定情報の取得元。
      */
-    private final ShopRepository shopRepository;
+    private final IShopRepository shopRepositoryImpl;
 
     /**
      * コンストラクタ。
      *
-     * @param shopRepository SHOP設定Repository
+     * @param shopRepositoryImpl SHOP設定Repository
      */
-    public ShopMenu(ShopRepository shopRepository) {
-        this.shopRepository = shopRepository;
+    public ShopMenu(IShopRepository shopRepositoryImpl) {
+        this.shopRepositoryImpl = shopRepositoryImpl;
     }
 
     /**
@@ -44,8 +44,8 @@ public class ShopMenu {
      *
      * @param player 表示対象プレイヤー
      */
-    public void open(Player player) {
-        ShopDto shop = shopRepository.getShop();
+    public void openShopCategory(Player player) {
+        ShopDto shop = shopRepositoryImpl.getShop();
 
         Inventory inventory = Bukkit.createInventory(
                 new CategoryMenuHolder(), shop.getSize(), MessageUtil.mm(CATEGORY_TITLE));
@@ -69,8 +69,8 @@ public class ShopMenu {
      * @param player   表示対象プレイヤー
      * @param category 表示対象カテゴリ
      */
-    public void openCategory(Player player, ShopCategoryDto category) {
-        ShopDto shop = shopRepository.getShop();
+    public void openShopItemByCategory(Player player, ShopCategoryDto category) {
+        ShopDto shop = shopRepositoryImpl.getShop();
 
         Inventory inventory = Bukkit.createInventory(
                 new ItemMenuHolder(category.getId()),

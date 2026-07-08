@@ -1,6 +1,6 @@
 package com.example.rpg.command;
 
-import com.example.rpg.service.MoneyService;
+import com.example.rpg.repository.interfaces.IMoneyRepository;
 import com.example.rpg.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -15,10 +15,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class PayCommand implements CommandExecutor {
 
-    private final MoneyService moneyService;
+    private final IMoneyRepository moneyRepository;
 
-    public PayCommand(MoneyService moneyService) {
-        this.moneyService = moneyService;
+    public PayCommand(IMoneyRepository moneyRepository) {
+        this.moneyRepository = moneyRepository;
     }
 
     @Override
@@ -64,15 +64,15 @@ public class PayCommand implements CommandExecutor {
             return true;
         }
 
-        boolean success = moneyService.removeMoney(fromPlayer.getUniqueId(), amount);
+        boolean success = moneyRepository.subtractMoney(fromPlayer.getUniqueId(), amount);
 
         if (!success) {
             fromPlayer.sendMessage(MessageUtil.red("所持金が足りません。"));
             return true;
         }
 
-        moneyService.addMoney(toPlayer.getUniqueId(), amount);
-        int senderMoney = moneyService.getMoney(fromPlayer.getUniqueId());
+        moneyRepository.addMoney(toPlayer.getUniqueId(), amount);
+        int senderMoney = moneyRepository.findMoney(fromPlayer.getUniqueId());
 
         fromPlayer.sendMessage(MessageUtil.mm("""
                 <gold>%s</gold><yellow> に </yellow><gold>%dG</gold><yellow> 送金しました。</yellow>

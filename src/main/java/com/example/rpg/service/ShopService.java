@@ -2,50 +2,55 @@ package com.example.rpg.service;
 
 import com.example.rpg.constants.ShopServiceConst;
 import com.example.rpg.dto.ShopItemDto;
-import com.example.rpg.repository.ShopRepository;
+import com.example.rpg.repository.interfaces.IMoneyRepository;
+import com.example.rpg.repository.interfaces.IShopPurchaseRepository;
+import com.example.rpg.repository.interfaces.IShopRepository;
 import com.example.rpg.util.MessageUtil;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * SHOPの購入・売却などの業務処理を担当するService。
+ * SHOPに関連する業務処理を担当するService。
  *
- * <p>GUIの生成は {@code ShopMenu}、コマンドやイベントからの入口はFacadeが担当する。
- * このServiceは、購入可否判定・所持金操作・購入回数制限・売却処理に責務を限定する。</p>
+ * <p>購入・売却・COMMAND商品実行・購入履歴更新など、
+ * SHOPユースケースに関する処理を集約する。</p>
+ *
+ * <p>GUIイベントやInventory生成は担当しない。
+ * ServiceをBukkit GUIから切り離すことで、将来的なNPCショップやAPI連携にも対応しやすくする。</p>
  */
 public class ShopService {
 
     /**
      * SHOP商品情報の取得元。
      */
-    private final ShopRepository shopRepository;
+    private final IShopRepository shopRepository;
 
     /**
      * 購入回数管理Service。
      */
-    private final ShopPurchaseService shopPurchaseService;
+    private final IShopPurchaseRepository shopPurchaseRepository;
 
     /**
      * 所持金管理Service。
      */
-    private final MoneyService moneyService;
+    private final IMoneyRepository moneyRepository;
 
     /**
-     * コンストラクタ。
+     * ShopServiceを生成する。
      *
-     * @param shopRepository      SHOP商品Repository
-     * @param shopPurchaseService 購入回数管理Service
-     * @param moneyService        所持金管理Service
+     * @param shopRepository         SHOP定義Repository
+     * @param moneyRepository        所持金Repository
+     * @param shopPurchaseRepository 購入履歴Repository
      */
     public ShopService(
-            ShopRepository shopRepository,
-            ShopPurchaseService shopPurchaseService,
-            MoneyService moneyService
+            IShopRepository shopRepository,
+            IMoneyRepository moneyRepository,
+            IShopPurchaseRepository shopPurchaseRepository
     ) {
         this.shopRepository = shopRepository;
-        this.shopPurchaseService = shopPurchaseService;
-        this.moneyService = moneyService;
+        this.moneyRepository = moneyRepository;
+        this.shopPurchaseRepository = shopPurchaseRepository;
     }
 
     /**
@@ -64,7 +69,7 @@ public class ShopService {
         }
 
         if (shopItem.getLimit() >= 0) {
-            int currentCount = shopPurchaseService.getPurchaseCount(player.getUniqueId(), shopItem.getId());
+            int currentCount = shopPurchaseRepository.findPurchaseCount(player.getUniqueId(), shopItem.getId());
 
             if (currentCount >= shopItem.getLimit()) {
                 player.sendMessage(MessageUtil.red("この商品は購入上限に達しています。"));
@@ -76,8 +81,8 @@ public class ShopService {
             }
         }
 
-        if (!moneyService.removeMoney(player.getUniqueId(), shopItem.getPrice())) {
-            int currentMoney = moneyService.getMoney(player.getUniqueId());
+        if (!moneyRepository.subtractMoney(player.getUniqueId(), shopItem.getPrice())) {
+            int currentMoney = moneyRepository.findMoney(player.getUniqueId());
 
             player.sendMessage(MessageUtil.red("所持金が足りません。"));
             player.sendMessage(MessageUtil.mm(
@@ -93,7 +98,7 @@ public class ShopService {
             buyItem(player, shopItem);
         }
 
-        shopPurchaseService.addPurchaseCount(player.getUniqueId(), shopItem.getId());
+        shopPurchaseRepository.incrementPurchaseCount(player.getUniqueId(), shopItem.getId());
 
         player.sendMessage(MessageUtil.mm(
                 "<yellow>購入しました: </yellow>" + shopItem.getName() +
@@ -103,10 +108,10 @@ public class ShopService {
     }
 
     /**
-     * 手に持っているアイテムを1個売却する。
+     * 手持ちアイテムを売却する。
      *
      * @param player 売却者
-     * @return コマンド処理完了ならtrue
+     * @return 売却処理結果
      */
     public boolean sellHandItem(Player player) {
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
@@ -116,7 +121,7 @@ public class ShopService {
             return true;
         }
 
-        ShopItemDto shopItem = shopRepository.findSellableItem(itemInHand.getType());
+        ShopItemDto shopItem = shopRepository.findShopSellableItem(itemInHand.getType());
 
         if (shopItem == null) {
             player.sendMessage(MessageUtil.red("このアイテムは売却できません。"));
@@ -127,7 +132,7 @@ public class ShopService {
         int totalPrice = shopItem.getSellPrice() * sellAmount;
 
         itemInHand.setAmount(itemInHand.getAmount() - sellAmount);
-        moneyService.addMoney(player.getUniqueId(), totalPrice);
+        moneyRepository.addMoney(player.getUniqueId(), totalPrice);
 
         player.sendMessage(MessageUtil.mm(
                 "<yellow>売却しました: </yellow>" +

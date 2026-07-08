@@ -1,6 +1,6 @@
 package com.example.rpg.command;
 
-import com.example.rpg.service.MoneyService;
+import com.example.rpg.repository.interfaces.IMoneyRepository;
 import com.example.rpg.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -19,10 +19,10 @@ import java.util.stream.Collectors;
  */
 public class MoneyCommand implements CommandExecutor, TabCompleter {
 
-    private final MoneyService moneyService;
+    private final IMoneyRepository moneyRepository;
 
-    public MoneyCommand(MoneyService moneyService) {
-        this.moneyService = moneyService;
+    public MoneyCommand(IMoneyRepository moneyRepository) {
+        this.moneyRepository = moneyRepository;
     }
 
     @Override
@@ -79,6 +79,10 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
         }
 
+        if (args.length == 3) {
+            return List.of("1", "100", "1000");
+        }
+
         return List.of();
     }
 
@@ -94,7 +98,7 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
             return false;
         }
 
-        int money = moneyService.getMoney(player.getUniqueId());
+        int money = moneyRepository.findMoney(player.getUniqueId());
 
         player.sendMessage(MessageUtil.mm("<yellow>現在の所持金：</yellow><gold>" + NumberFormat.getNumberInstance().format(money) + "G</gold>"));
 
@@ -126,7 +130,7 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
             return false;
         }
 
-        int total = moneyService.addMoney(target.getUniqueId(), amount);
+        int total = moneyRepository.addMoney(target.getUniqueId(), amount);
 
         sender.sendMessage(MessageUtil.mm("""
                 <gold>%s</gold><yellow> に </yellow><gold>%dG</gold><yellow> 追加しました。</yellow> <gray>残高: %dG</gray>""".formatted(target.getName(), amount, total)
@@ -160,7 +164,7 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
             return false;
         }
 
-        int total = moneyService.setMoney(target.getUniqueId(), amount);
+        int total = moneyRepository.setMoney(target.getUniqueId(), amount);
 
         sender.sendMessage(MessageUtil.mm(
                 "<gold>" + target.getName() + "</gold><yellow> の所持金を </yellow><gold>" + total + "G</gold><yellow> に設定しました。</yellow>"
@@ -198,14 +202,14 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
             return false;
         }
 
-        boolean success = moneyService.removeMoney(target.getUniqueId(), amount);
+        boolean success = moneyRepository.subtractMoney(target.getUniqueId(), amount);
 
         if (!success) {
             sender.sendMessage(MessageUtil.red("対象プレイヤーの所持金が足りません。"));
             return false;
         }
 
-        int total = moneyService.getMoney(target.getUniqueId());
+        int total = moneyRepository.findMoney(target.getUniqueId());
 
         sender.sendMessage(MessageUtil.mm(
                 "<gold>" + target.getName() + "</gold><yellow> から </yellow><gold>" + amount + "G</gold><yellow> 減らしました。</yellow> <gray>残高: " + total + "G</gray>"

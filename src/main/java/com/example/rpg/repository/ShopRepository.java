@@ -4,11 +4,13 @@ import com.example.rpg.dto.ShopCategoryDto;
 import com.example.rpg.dto.ShopDto;
 import com.example.rpg.dto.ShopItemDto;
 import com.example.rpg.dto.ShopItemType;
+import com.example.rpg.repository.interfaces.IShopRepository;
 import com.example.rpg.util.RpgUtil;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +30,9 @@ import java.util.Map;
  * データ取得方法の変更をRepository内へ閉じ込められる。
  * </p>
  */
-public class ShopRepository extends AbstractRepository<ShopItemDto> {
+public class ShopRepository implements IShopRepository {
 
+    private final YamlConfiguration config;
     /**
      * 読み込み済みのSHOP定義。
      *
@@ -43,26 +46,20 @@ public class ShopRepository extends AbstractRepository<ShopItemDto> {
     /**
      * SHOP Repositoryを生成する。
      *
-     * <p>
-     * インスタンス生成時にはデータを保持せず、
-     * {@link #load(FileConfiguration)} の実行によって
-     * SHOP定義を初期化する。
-     * </p>
      */
-    public ShopRepository() {
+    public ShopRepository(YamlConfiguration config) {
+        this.config = config;
+        load();
     }
 
     /**
-     * 設定ファイルを読み込み {@link ShopDto} を生成し保持する
-     *
-     * @param config 設定ファイル(config.yml
+     * {@inheritDoc}
      */
-    public void load(FileConfiguration config) {
-        clear();
+    public void load() {
         ConfigurationSection shopSection = config.getConfigurationSection("shop");
 
         if (shopSection == null) {
-            throw new IllegalStateException("config.yml に shop がありません");
+            throw new IllegalStateException("shop.yml に shop がありません");
         }
 
         String title = shopSection.getString("title", "<gold>SHOP</gold>");
@@ -82,10 +79,6 @@ public class ShopRepository extends AbstractRepository<ShopItemDto> {
 
                 ShopCategoryDto category = loadCategory(categoryId, categorySection);
                 categories.put(categoryId, category);
-
-                for (ShopItemDto item : category.getItems().values()) {
-                    put(item.getId(), item);
-                }
             }
         }
 
@@ -185,28 +178,23 @@ public class ShopRepository extends AbstractRepository<ShopItemDto> {
     }
 
     /**
-     * カテゴリIDからSHOPカテゴリを取得する。
-     *
-     * <p>カテゴリの保持形式をRepository内部へ閉じ込めることで、
-     * 将来DB化しても呼び出し側の変更を最小化する。</p>
-     *
-     * @param categoryId カテゴリID
-     * @return カテゴリ。存在しない場合はnull
+     * {@inheritDoc}
      */
-    public ShopCategoryDto findCategoryById(String categoryId) {
+    public List<ShopCategoryDto> getShopCategoryList() {
+        return shop.getCategories().values().stream().toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public ShopCategoryDto findShopCategoryById(String categoryId) {
         return shop.getCategories().get(categoryId);
     }
 
     /**
-     * 表示スロットからSHOPカテゴリを取得する。
-     *
-     * <p>GUI上の配置とカテゴリ定義の対応はRepositoryが把握する。
-     * Facadeは「探し方」ではなく「見つかった後の画面遷移」に集中させる。</p>
-     *
-     * @param slot GUIスロット番号
-     * @return カテゴリ。存在しない場合はnull
+     * {@inheritDoc}
      */
-    public ShopCategoryDto findCategoryBySlot(int slot) {
+    public ShopCategoryDto findShopCategoryBySlot(int slot) {
         return shop.getCategories()
                 .values()
                 .stream()
@@ -216,16 +204,45 @@ public class ShopRepository extends AbstractRepository<ShopItemDto> {
     }
 
     /**
-     * カテゴリIDと表示スロットからSHOP商品を取得する。
-     *
-     * <p>商品探索処理をRepositoryに集約し、FacadeがDTOのMap構造へ依存しないようにする。</p>
-     *
-     * @param categoryId カテゴリID
-     * @param slot       GUIスロット番号
-     * @return 商品。存在しない場合はnull
+     * {@inheritDoc}
      */
-    public ShopItemDto findItemBySlot(String categoryId, int slot) {
-        ShopCategoryDto category = findCategoryById(categoryId);
+    public List<ShopItemDto> getShopItemList() {
+        List<ShopItemDto> itemList = new ArrayList<ShopItemDto>();
+        Map<String, ShopCategoryDto> categories = shop.getCategories();
+        for (ShopCategoryDto category : categories.values()) {
+            for (ShopItemDto item : category.getItems().values()) {
+                itemList.add(item);
+            }
+        }
+        return itemList;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public ShopItemDto findShopItemById(String itemId) {
+        Map<String, ShopCategoryDto> categories = shop.getCategories();
+
+        if (categories.isEmpty()) {
+            return null;
+        }
+
+        for (ShopCategoryDto category : categories.values()) {
+            for (ShopItemDto item : category.getItems().values()) {
+                if (item.getId().equals(itemId)) {
+                    return item;
+                }
+            }
+
+        }
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public ShopItemDto findShopItemBySlot(String categoryId, int slot) {
+        ShopCategoryDto category = findShopCategoryById(categoryId);
 
         if (category == null) {
             return null;
@@ -240,15 +257,9 @@ public class ShopRepository extends AbstractRepository<ShopItemDto> {
     }
 
     /**
-     * Materialから売却可能なSHOP商品を取得する。
-     *
-     * <p>売却対象の検索はSHOP定義全体を横断するため、
-     * ServiceではなくRepositoryに閉じ込める。</p>
-     *
-     * @param material Bukkit Material
-     * @return 売却可能商品。存在しない場合はnull
+     * {@inheritDoc}
      */
-    public ShopItemDto findSellableItem(Material material) {
+    public ShopItemDto findShopSellableItem(Material material) {
         return shop.getCategories()
                 .values()
                 .stream()
@@ -259,7 +270,10 @@ public class ShopRepository extends AbstractRepository<ShopItemDto> {
                 .orElse(null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public ShopDto getShop() {
-        return shop;
+        return this.shop;
     }
 }

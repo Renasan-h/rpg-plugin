@@ -1,6 +1,7 @@
 package com.example.rpg.command;
 
-import com.example.rpg.facade.ShopFacade;
+import com.example.rpg.facade.ShopGuiFacade;
+import com.example.rpg.service.ShopService;
 import com.example.rpg.util.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -17,17 +18,23 @@ import org.jetbrains.annotations.NotNull;
 public class ShopCommand implements CommandExecutor {
 
     /**
-     * SHOP機能の入口。
+     * SHOP GUI FACADE
      */
-    private final ShopFacade shopFacade;
+    private final ShopGuiFacade shopGuiFacade;
+    /**
+     * SHOP業務処理クラス
+     */
+    private final ShopService shopService;
 
     /**
      * SHOPコマンドを生成する。
      *
-     * @param shopFacade SHOP Facade
+     * @param shopGuiFacade SHOP GUI Facade
+     * @param shopService   SHOP業務処理クラス
      */
-    public ShopCommand(ShopFacade shopFacade) {
-        this.shopFacade = shopFacade;
+    public ShopCommand(ShopGuiFacade shopGuiFacade, ShopService shopService) {
+        this.shopGuiFacade = shopGuiFacade;
+        this.shopService = shopService;
     }
 
     /**
@@ -47,12 +54,12 @@ public class ShopCommand implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            shopFacade.openShop(player);
+            shopGuiFacade.openCategory(player);
             return true;
         }
 
         if (args[0].equalsIgnoreCase("sell")) {
-            return shopFacade.sellHandItem(player);
+            return shopService.sellHandItem(player);
         }
 
         player.sendMessage(MessageUtil.yellow("使用方法： /shop または /shop sell"));

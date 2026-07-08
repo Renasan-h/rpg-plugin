@@ -5,7 +5,7 @@ import com.example.rpg.dto.ShopItemDto;
 import com.example.rpg.menu.ShopMenu;
 import com.example.rpg.menu.holder.CategoryMenuHolder;
 import com.example.rpg.menu.holder.ItemMenuHolder;
-import com.example.rpg.repository.ShopRepository;
+import com.example.rpg.repository.interfaces.IShopRepository;
 import com.example.rpg.service.ShopService;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -14,71 +14,55 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * SHOP機能のFacade。
- * <p>
- * Command・Listenerからの入口を集約し、
- * GUIとServiceの責務を分離する。
+ * SHOP GUIイベントの処理入口を担当するFacade。
+ *
+ * <p>ListenerクラスをBukkitイベントの受け口に限定し、
+ * GUI判定・画面遷移・商品クリック処理をこのクラスへ集約する。</p>
  */
-public class ShopFacade {
-    /**
-     * SHOP定義を取得するRepository。
-     */
-    private final ShopRepository shopRepositoryImpl;
+public class ShopGuiFacade {
 
     /**
-     * SHOP GUI生成クラス
+     * SHOP定義Repository。
+     */
+    private final IShopRepository shopRepository;
+
+    /**
+     * SHOP GUI描画クラス。
      */
     private final ShopMenu shopMenu;
+
     /**
-     * SHOP サービスクラス
+     * SHOP業務処理Service。
      */
     private final ShopService shopService;
 
     /**
-     * コンストラクタ
+     * SHOP Listener Facadeを生成する。
      *
-     * @param shopMenu    SHOP画面管理
-     * @param shopService 購入・売却処理
+     * @param ShopRepository SHOP定義Repository
+     * @param shopMenu       SHOP GUI描画クラス
+     * @param shopService    SHOP業務処理Service
      */
-    public ShopFacade(
-            ShopRepository shopRepositoryImpl,
+    public ShopGuiFacade(
+            IShopRepository shopRepository,
             ShopMenu shopMenu,
-            ShopService shopService) {
+            ShopService shopService
+    ) {
+        this.shopRepository = shopRepository;
         this.shopMenu = shopMenu;
         this.shopService = shopService;
-        this.shopRepositoryImpl = shopRepositoryImpl;
     }
 
-    /**
-     * SHOPカテゴリー一覧画面を表示する。
-     *
-     * @param player 操作プレイヤー
-     */
-    public void openShop(Player player) {
-        // GUIはFacadeが管理するため、Commandから直接Menuを呼ばない
+    public void openCategory(Player player) {
         shopMenu.openShopCategory(player);
-    }
-
-    /**
-     * 手持ちアイテムを売却する。
-     *
-     * @param player 操作プレイヤー
-     * @return コマンド処理結果
-     */
-    public boolean sellHandItem(Player player) {
-        return shopService.sellHandItem(player);
     }
 
     /**
      * SHOP GUIクリックイベントを処理する。
      *
-     * <p>InventoryClickEventはBukkitの画面操作に強く依存するため、
-     * ServiceではなくFacadeで受け取る。</p>
-     *
      * @param event インベントリクリックイベント
      */
     public void handleClick(InventoryClickEvent event) {
-
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
@@ -87,11 +71,17 @@ public class ShopFacade {
             return;
         }
 
+        // 下側プレイヤーインベントリはSHOP GUIではないので、処理対象外
+        if (event.getRawSlot() >= event.getView().getTopInventory().getSize()) {
+            return;
+        }
+
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
 
         if (holder instanceof CategoryMenuHolder) {
             event.setCancelled(true);
             handleCategoryClick(player, event);
+            return;
         }
 
         if (holder instanceof ItemMenuHolder itemMenuHolder) {
@@ -101,7 +91,7 @@ public class ShopFacade {
     }
 
     /**
-     * カテゴリ一覧GUIのクリックを処理する。
+     * カテゴリ一覧GUIのクリック処理
      *
      * @param player 操作プレイヤー
      * @param event  インベントリクリックイベント
@@ -113,7 +103,7 @@ public class ShopFacade {
             return;
         }
 
-        ShopCategoryDto category = shopRepositoryImpl.findShopCategoryBySlot(event.getRawSlot());
+        ShopCategoryDto category = shopRepository.findShopCategoryBySlot(event.getRawSlot());
 
         if (category == null) {
             return;
@@ -127,7 +117,7 @@ public class ShopFacade {
      *
      * @param player 操作プレイヤー
      * @param event  インベントリクリックイベント
-     * @param holder 商品一覧Holder
+     * @param holder 商品一覧GUI Holder
      */
     private void handleItemClick(Player player, InventoryClickEvent event, ItemMenuHolder holder) {
         ItemStack clicked = event.getCurrentItem();
@@ -136,15 +126,11 @@ public class ShopFacade {
             return;
         }
 
-        ShopCategoryDto category = shopRepositoryImpl.getShop()
-                .getCategories()
-                .get(holder.getCategoryId());
+        ShopItemDto item = shopRepository.findShopItemBySlot(holder.getCategoryId(), event.getRawSlot());
 
-        if (category == null) {
+        if (item == null) {
             return;
         }
-
-        ShopItemDto item = shopRepositoryImpl.findShopItemBySlot(category.getId(), event.getRawSlot());
 
         shopService.buy(player, item);
     }

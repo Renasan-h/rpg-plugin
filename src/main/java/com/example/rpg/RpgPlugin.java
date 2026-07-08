@@ -1,86 +1,107 @@
 package com.example.rpg;
 
 import com.example.rpg.command.*;
-import com.example.rpg.facade.ShopFacade;
+import com.example.rpg.facade.ShopGuiFacade;
 import com.example.rpg.listener.BlockBreakListener;
 import com.example.rpg.listener.EntityKillListener;
 import com.example.rpg.listener.ServerPingListener;
 import com.example.rpg.listener.ShopListener;
 import com.example.rpg.menu.ShopMenu;
+import com.example.rpg.repository.MoneyRepository;
+import com.example.rpg.repository.ShopPurchaseRepository;
 import com.example.rpg.repository.ShopRepository;
+import com.example.rpg.repository.interfaces.IMoneyRepository;
+import com.example.rpg.repository.interfaces.IShopPurchaseRepository;
+import com.example.rpg.repository.interfaces.IShopRepository;
 import com.example.rpg.service.ExpService;
-import com.example.rpg.service.MoneyService;
-import com.example.rpg.service.ShopPurchaseService;
 import com.example.rpg.service.ShopService;
 import com.example.rpg.util.MessageUtil;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.Objects;
 
 public class RpgPlugin extends JavaPlugin implements Listener {
 
-    private ShopPurchaseService shopPurchaseService;
-    private MoneyService moneyService;
+    private IShopPurchaseRepository shopPurchaseRepository;
+    private IMoneyRepository moneyRepository;
 
 
     @Override
     public void onEnable() {
+        if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
+            throw new UnsupportedOperationException();
+        }
+
+        // config.ymlの読み込み
         saveDefaultConfig();
         saveResource("config.yml", true); // true = 上書き
-        this.moneyService = new MoneyService(this);
-        this.shopPurchaseService = new ShopPurchaseService(this);
-        ExpService expService = new ExpService();
-        ShopRepository shopRepository = new ShopRepository();
-        shopRepository.load(getConfig());
+
+        // moneyRepositoryの生成
+        copyDefaultResourceIfMissing("money.yaml");
+        this.moneyRepository = new MoneyRepository(this, new File(getDataFolder(), "money.yml"));
+
+        // shopPurchaseRepositoryの生成
+        copyDefaultResourceIfMissing("shop-purchases.yml");
+        this.shopPurchaseRepository = new ShopPurchaseRepository(this, new File(getDataFolder(), "shop-purchases.yml"));
+
+        // shopRepositoryの生成
+        copyDefaultResourceIfMissing("shop.yml");
+        IShopRepository shopRepository = new ShopRepository(
+                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "shop.yml"))
+        );
+
         ShopMenu shopMenu = new ShopMenu(shopRepository);
 
         ShopService shopService = new ShopService(
                 shopRepository,
-                shopPurchaseService,
-                moneyService
+                moneyRepository,
+                shopPurchaseRepository
         );
 
-        ShopFacade shopFacade = new ShopFacade(
+        ShopGuiFacade shopGuiFacade = new ShopGuiFacade(
                 shopRepository,
                 shopMenu,
                 shopService
         );
 
-        Objects.requireNonNull(getCommand("shop")).setExecutor(new ShopCommand(shopFacade));
-        getServer().getPluginManager().registerEvents(new ShopListener(shopFacade), this);
+        Objects.requireNonNull(getCommand("shop")).setExecutor(new ShopCommand(shopGuiFacade, shopService));
+        getServer().getPluginManager().registerEvents(new ShopListener(shopGuiFacade), this);
 
+        ExpService expService = new ExpService();
 
         // 実行Lister・コマンドの登録
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new ServerPingListener(), this);
         getServer().getPluginManager().registerEvents(new BlockBreakListener(), this);
-        getServer().getPluginManager().registerEvents(new EntityKillListener(moneyService, expService), this);
+        getServer().getPluginManager().registerEvents(new EntityKillListener(moneyRepository, expService), this);
 
-        MoneyCommand moneyCommand = new MoneyCommand(moneyService);
+        MoneyCommand moneyCommand = new MoneyCommand(moneyRepository);
         Objects.requireNonNull(getCommand("money")).setExecutor(moneyCommand);
         Objects.requireNonNull(getCommand("money")).setTabCompleter(moneyCommand);
-        Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(moneyService));
+        Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(moneyRepository));
         Objects.requireNonNull(getCommand("exp")).setExecutor(new ExpCommand(expService));
 
         Objects.requireNonNull(getCommand("rpg")).setExecutor(new RpgCommand(this));
 
-        ShopAdminCommand shopAdminCommand = new ShopAdminCommand(shopPurchaseService);
-        Objects.requireNonNull(getCommand("shopadmin")).setExecutor(shopAdminCommand);
-        Objects.requireNonNull(getCommand("shopadmin")).setTabCompleter(shopAdminCommand);
+        AdminCommand adminCommand = new AdminCommand(shopPurchaseRepository);
+        Objects.requireNonNull(getCommand("admin")).setExecutor(adminCommand);
+        Objects.requireNonNull(getCommand("admin")).setTabCompleter(adminCommand);
 
         getLogger().info("RpgPlugin enabled.");
     }
 
     @Override
     public void onDisable() {
-        if (moneyService != null) {
-            moneyService.save();
+        if (moneyRepository != null) {
+            moneyRepository.save();
         }
-        if (shopPurchaseService != null) {
-            shopPurchaseService.save();
+        if (shopPurchaseRepository != null) {
+            shopPurchaseRepository.save();
         }
 
 
@@ -111,5 +132,20 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         player.sendMessage(MessageUtil.mm(
                 "<gradient:#00ffff:#ff00ff>==============================</gradient>"
         ));
+    }
+
+    /**
+     * 指定されたconfigファイルを確認し、存在しない場合はテンプレートファイルをデータフォルダにコピーする
+     *
+     * @param fileName config file name
+     */
+    public void copyDefaultResourceIfMissing(String fileName) {
+        File file = new File(getDataFolder(), fileName);
+
+        if (file.exists()) {
+            return;
+        }
+
+        saveResource(fileName, false);
     }
 }

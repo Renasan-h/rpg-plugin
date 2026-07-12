@@ -76,6 +76,10 @@ public class ShopMenu {
      */
     private static final int NEXT_PAGE_OFFSET = 8;
     /**
+     * カテゴリ一覧へ戻るボタンの最終行内オフセット。
+     */
+    private static final int BACK_CATEGORY_OFFSET = 3;
+    /**
      * SHOP設定情報の取得元。
      */
     private final IShopRepository shopRepository;
@@ -499,6 +503,15 @@ public class ShopMenu {
             final int totalPages
     ) {
         inventory.setItem(
+                getBackCategorySlot(inventory.getSize()),
+                createActionItem(
+                        Material.BARRIER,
+                        "<red>カテゴリ一覧へ戻る</red>",
+                        ShopMenuAction.BACK_CATEGORY
+                )
+        );
+
+        inventory.setItem(
                 getPageIndicatorSlot(inventory.getSize()),
                 createPageIndicator(currentPage, totalPages)
         );
@@ -528,6 +541,45 @@ public class ShopMenu {
                     )
             );
         }
+    }
+
+    /**
+     * ページ番号を必要としないGUI操作アイテムを生成する。
+     *
+     * @param material 表示Material
+     * @param name     表示名
+     * @param action   実行アクション
+     * @return GUI操作アイテム
+     */
+    private ItemStack createActionItem(
+            final Material material,
+            final String name,
+            final ShopMenuAction action
+    ) {
+        final ItemStack itemStack = new ItemStack(material);
+        final ItemMeta meta = itemStack.getItemMeta();
+
+        meta.displayName(MessageUtil.mm(name));
+        meta.getPersistentDataContainer().set(
+                pdcKeys.getActionKey(),
+                PersistentDataType.STRING,
+                action.name()
+        );
+
+        itemStack.setItemMeta(meta);
+        return itemStack;
+    }
+
+    /**
+     * カテゴリ一覧へ戻るボタンのスロットを取得する。
+     *
+     * @param inventorySize GUIサイズ
+     * @return 戻るボタンのスロット番号
+     */
+    private int getBackCategorySlot(final int inventorySize) {
+        return inventorySize
+                - NAVIGATION_ROW_SIZE
+                + BACK_CATEGORY_OFFSET;
     }
 
     /**

@@ -13,5 +13,10 @@ public enum ShopMenuAction {
     /**
      * 次ページを表示する。
      */
-    NEXT_PAGE
+    NEXT_PAGE,
+
+    /**
+     * カテゴリ一覧画面へ戻る
+     */
+    BACK_CATEGORY
 }

@@ -79,6 +79,18 @@ public class ShopFacade {
      * @param event インベントリクリックイベント
      */
     public void handleClick(InventoryClickEvent event) {
+        final InventoryHolder holder = event.getView().getTopInventory().getHolder();
+
+        // クリックされたインベントリがSHOP画面でない場合は処理を終了する
+        if (!(holder instanceof CategoryMenuHolder)
+                && !(holder instanceof ItemMenuHolder)) {
+            return;
+        }
+
+        // SHOP画面を開いている間は、下側インベントリのShiftクリック含め、
+        // InventoryClickEventによるアイテム移動をすべて禁止する。
+        event.setCancelled(true);
+
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
@@ -92,16 +104,12 @@ public class ShopFacade {
             return;
         }
 
-        InventoryHolder holder = event.getView().getTopInventory().getHolder();
-
         if (holder instanceof CategoryMenuHolder) {
-            event.setCancelled(true);
             handleCategoryClick(player, event);
             return;
         }
 
         if (holder instanceof ItemMenuHolder itemMenuHolder) {
-            event.setCancelled(true);
             handleItemClick(player, event, itemMenuHolder);
         }
     }
@@ -219,22 +227,30 @@ public class ShopFacade {
             return false;
         }
 
+        final ShopMenuAction action;
+
+        try {
+            action = ShopMenuAction.valueOf(actionName);
+        } catch (IllegalArgumentException e) {
+            return true;
+        }
+
+        if (action == ShopMenuAction.BACK_CATEGORY) {
+            shopMenu.openShopCategory(player);
+            return true;
+        }
+
         final Integer targetPage = findPage(clickedItem);
 
         if (targetPage == null) {
             return true;
         }
 
-        final ShopMenuAction action;
-
-        try {
-            action = ShopMenuAction.valueOf(actionName);
-        } catch (IllegalArgumentException exception) {
-            return true;
-        }
-
         switch (action) {
             case PREVIOUS_PAGE, NEXT_PAGE -> openItemPage(player, holder, targetPage);
+            case BACK_CATEGORY -> {
+                // 上処理で対応済み
+            }
         }
 
         return true;

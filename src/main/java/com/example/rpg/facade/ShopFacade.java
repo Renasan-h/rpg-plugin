@@ -1,17 +1,13 @@
 package com.example.rpg.facade;
 
-import com.example.rpg.dto.ShopCategoryDto;
-import com.example.rpg.dto.ShopItemDto;
 import com.example.rpg.menu.ShopMenu;
 import com.example.rpg.menu.holder.CategoryMenuHolder;
 import com.example.rpg.menu.holder.ItemMenuHolder;
 import com.example.rpg.repository.ShopRepository;
 import com.example.rpg.service.ShopService;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.ItemStack;
 
 /**
  * SHOP機能のFacade。
@@ -70,82 +66,118 @@ public class ShopFacade {
     }
 
     /**
-     * SHOP GUIクリックイベントを処理する。
+     * ショップGUIのクリックイベントを処理します。
      *
-     * <p>InventoryClickEventはBukkitの画面操作に強く依存するため、
-     * ServiceではなくFacadeで受け取る。</p>
-     *
-     * @param event インベントリクリックイベント
+     * @param event クリックイベント
      */
-    public void handleClick(InventoryClickEvent event) {
+    public void handleClick(final InventoryClickEvent event) {
 
-        if (!(event.getWhoClicked() instanceof Player player)) {
+        if (!validateClick(event)) {
             return;
+        }
+
+        final InventoryHolder holder = event.getInventory().getHolder();
+
+        if (holder instanceof CategoryMenuHolder categoryHolder) {
+            handleCategoryClick(event, categoryHolder);
+            return;
+        }
+
+        if (holder instanceof ItemMenuHolder itemHolder) {
+            handleItemClick(event, itemHolder);
+        }
+    }
+
+    /**
+     * ショップGUIのクリックイベントを検証します。
+     *
+     * @param event クリックイベント
+     * @return 処理対象の場合true
+     */
+    private boolean validateClick(final InventoryClickEvent event) {
+
+        if (!(event.getWhoClicked() instanceof Player)) {
+            return false;
         }
 
         if (event.getClickedInventory() == null) {
-            return;
+            return false;
         }
 
-        InventoryHolder holder = event.getView().getTopInventory().getHolder();
-
-        if (holder instanceof CategoryMenuHolder) {
-            event.setCancelled(true);
-            handleCategoryClick(player, event);
+        if (event.getCurrentItem() == null) {
+            return false;
         }
 
-        if (holder instanceof ItemMenuHolder itemMenuHolder) {
-            event.setCancelled(true);
-            handleItemClick(player, event, itemMenuHolder);
+        // BukkitはAIRクリックでもイベントを発火するため、
+        // 空スロットは購入対象外とする。
+        if (event.getCurrentItem().getType().isAir()) {
+            return false;
         }
+
+        return event.getInventory().getHolder() instanceof ShopMenuHolder;
     }
 
     /**
-     * カテゴリ一覧GUIのクリックを処理する。
+     * カテゴリ画面のクリックを処理します。
      *
-     * @param player 操作プレイヤー
-     * @param event  インベントリクリックイベント
+     * @param event          クリックイベント
+     * @param categoryHolder カテゴリホルダー
      */
-    private void handleCategoryClick(Player player, InventoryClickEvent event) {
-        ItemStack clicked = event.getCurrentItem();
+    private void handleCategoryClick(
+            final InventoryClickEvent event,
+            final CategoryMenuHolder categoryHolder
+    ) {
+        final Player player = (Player) event.getWhoClicked();
 
-        if (clicked == null || clicked.getType() == Material.AIR) {
-            return;
-        }
+        event.setCancelled(true);
 
-        ShopCategoryDto category = shopRepositoryImpl.findShopCategoryBySlot(event.getRawSlot());
-
-        if (category == null) {
-            return;
-        }
-
-        shopMenu.openShopItemByCategory(player, category);
+        shopMenu.openItemMenu(
+                player,
+                categoryHolder.getShopId(),
+                event.getSlot()
+        );
     }
 
     /**
-     * 商品一覧GUIのクリックを処理する。
+     * 商品画面のクリックを処理します。
      *
-     * @param player 操作プレイヤー
-     * @param event  インベントリクリックイベント
-     * @param holder 商品一覧Holder
+     * @param event      クリックイベント
+     * @param itemHolder 商品ホルダー
      */
-    private void handleItemClick(Player player, InventoryClickEvent event, ItemMenuHolder holder) {
-        ItemStack clicked = event.getCurrentItem();
+    private void handleItemClick(
+            final InventoryClickEvent event,
+            final ItemMenuHolder itemHolder
+    ) {
+        event.setCancelled(true);
 
-        if (clicked == null || clicked.getType() == Material.AIR) {
-            return;
+        handleActionClick(event, itemHolder);
+    }
+
+    /**
+     * 商品画面のアクションを処理します。
+     *
+     * @param event      クリックイベント
+     * @param itemHolder 商品ホルダー
+     */
+    private void handleActionClick(
+            final InventoryClickEvent event,
+            final ItemMenuHolder itemHolder
+    ) {
+        final Player player = (Player) event.getWhoClicked();
+
+        switch (event.getClick()) {
+            case LEFT -> shopService.buy(
+                    player,
+                    itemHolder.getShopId(),
+                    itemHolder.getCategoryId(),
+                    event.getSlot()
+            );
+
+            case RIGHT -> shopService.sellHandItem(player);
+
+            default -> {
+                // 左右クリック以外はショップ操作対象外とする。
+            }
         }
-
-        ShopCategoryDto category = shopRepositoryImpl.getShop()
-                .getCategories()
-                .get(holder.getCategoryId());
-
-        if (category == null) {
-            return;
-        }
-
-        ShopItemDto item = shopRepositoryImpl.findShopItemBySlot(category.getId(), event.getRawSlot());
-
-        shopService.buy(player, item);
     }
 }

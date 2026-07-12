@@ -28,15 +28,15 @@ public class ShopMenu {
     /**
      * SHOP設定情報の取得元。
      */
-    private final IShopRepository shopRepositoryImpl;
+    private final IShopRepository shopRepository;
 
     /**
      * コンストラクタ。
      *
-     * @param shopRepositoryImpl SHOP設定Repository
+     * @param shopRepository SHOP設定Repository
      */
-    public ShopMenu(IShopRepository shopRepositoryImpl) {
-        this.shopRepositoryImpl = shopRepositoryImpl;
+    public ShopMenu(IShopRepository shopRepository) {
+        this.shopRepository = shopRepository;
     }
 
     /**
@@ -45,12 +45,12 @@ public class ShopMenu {
      * @param player 表示対象プレイヤー
      */
     public void openShopCategory(Player player) {
-        ShopDto shop = shopRepositoryImpl.getShop();
+        ShopDto shop = shopRepository.getShopDto();
 
         Inventory inventory = Bukkit.createInventory(
                 new CategoryMenuHolder(), shop.getSize(), MessageUtil.mm(CATEGORY_TITLE));
 
-        for (ShopCategoryDto category : shop.getCategories().values()) {
+        for (ShopCategoryDto category : shopRepository.findCategories()) {
             ItemStack icon = new ItemStack(category.getIcon());
             ItemMeta meta = icon.getItemMeta();
 
@@ -70,7 +70,7 @@ public class ShopMenu {
      * @param category 表示対象カテゴリ
      */
     public void openShopItemByCategory(Player player, ShopCategoryDto category) {
-        ShopDto shop = shopRepositoryImpl.getShop();
+        ShopDto shop = shopRepository.getShopDto();
 
         Inventory inventory = Bukkit.createInventory(
                 new ItemMenuHolder(category.getId()),
@@ -78,7 +78,7 @@ public class ShopMenu {
                 MessageUtil.mm(ITEM_TITLE_PREFIX + category.getName())
         );
 
-        for (ShopItemDto item : category.getItems().values()) {
+        for (ShopItemDto item : shopRepository.findShopItems(category.getId())) {
             // 権限付き商品は、権限を持つプレイヤーにだけ表示する。
             if (!item.getPermission().isEmpty() && !player.hasPermission(item.getPermission())) {
                 continue;

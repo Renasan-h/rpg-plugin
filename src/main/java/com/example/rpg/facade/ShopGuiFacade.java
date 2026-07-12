@@ -39,9 +39,8 @@ public class ShopGuiFacade {
     /**
      * SHOP Listener Facadeを生成する。
      *
-     * @param ShopRepository SHOP定義Repository
-     * @param shopMenu       SHOP GUI描画クラス
-     * @param shopService    SHOP業務処理Service
+     * @param shopMenu    SHOP GUI描画クラス
+     * @param shopService SHOP業務処理Service
      */
     public ShopGuiFacade(
             IShopRepository shopRepository,

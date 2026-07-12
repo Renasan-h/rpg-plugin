@@ -10,10 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * SHOP定義を管理するRepository。
@@ -41,7 +38,7 @@ public class ShopRepository implements IShopRepository {
      * Repository内のみが保持し、外部から直接変更しないことを前提とする。
      * </p>
      */
-    private ShopDto shop;
+    private ShopDto shopDto;
 
     /**
      * SHOP Repositoryを生成する。
@@ -82,7 +79,7 @@ public class ShopRepository implements IShopRepository {
             }
         }
 
-        this.shop = new ShopDto(title, size, categories);
+        this.shopDto = new ShopDto(title, size, categories);
     }
 
     /**
@@ -180,22 +177,22 @@ public class ShopRepository implements IShopRepository {
     /**
      * {@inheritDoc}
      */
-    public List<ShopCategoryDto> getShopCategoryList() {
-        return shop.getCategories().values().stream().toList();
+    public List<ShopCategoryDto> findCategories() {
+        return List.copyOf(new ArrayList<>(shopDto.getCategories().values()));
     }
 
     /**
      * {@inheritDoc}
      */
     public ShopCategoryDto findShopCategoryById(String categoryId) {
-        return shop.getCategories().get(categoryId);
+        return shopDto.getCategories().get(categoryId);
     }
 
     /**
      * {@inheritDoc}
      */
     public ShopCategoryDto findShopCategoryBySlot(int slot) {
-        return shop.getCategories()
+        return shopDto.getCategories()
                 .values()
                 .stream()
                 .filter(category -> category.getSlot() == slot)
@@ -206,22 +203,21 @@ public class ShopRepository implements IShopRepository {
     /**
      * {@inheritDoc}
      */
-    public List<ShopItemDto> getShopItemList() {
-        List<ShopItemDto> itemList = new ArrayList<ShopItemDto>();
-        Map<String, ShopCategoryDto> categories = shop.getCategories();
-        for (ShopCategoryDto category : categories.values()) {
-            for (ShopItemDto item : category.getItems().values()) {
-                itemList.add(item);
-            }
+    public List<ShopItemDto> findShopItems(String categoryId) {
+        ShopCategoryDto category = findShopCategoryById(categoryId);
+
+        if (category == null) {
+            return Collections.emptyList();
         }
-        return itemList;
+
+        return List.copyOf(category.getItems().values());
     }
 
     /**
      * {@inheritDoc}
      */
     public ShopItemDto findShopItemById(String itemId) {
-        Map<String, ShopCategoryDto> categories = shop.getCategories();
+        Map<String, ShopCategoryDto> categories = shopDto.getCategories();
 
         if (categories.isEmpty()) {
             return null;
@@ -260,7 +256,7 @@ public class ShopRepository implements IShopRepository {
      * {@inheritDoc}
      */
     public ShopItemDto findShopSellableItem(Material material) {
-        return shop.getCategories()
+        return shopDto.getCategories()
                 .values()
                 .stream()
                 .flatMap(category -> category.getItems().values().stream())
@@ -273,7 +269,7 @@ public class ShopRepository implements IShopRepository {
     /**
      * {@inheritDoc}
      */
-    public ShopDto getShop() {
-        return this.shop;
+    public ShopDto getShopDto() {
+        return this.shopDto;
     }
 }

@@ -6,7 +6,6 @@ import com.example.rpg.repository.interfaces.IMoneyRepository;
 import com.example.rpg.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.repository.interfaces.IShopRepository;
 import com.example.rpg.util.MessageUtil;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -56,92 +55,153 @@ public class ShopService {
     /**
      * 商品購入処理を実行する。
      *
-     * <p>購入制限・所持金不足・インベントリ空きチェックをまとめて扱う。
-     * 購入可否判定は必ず決済前に行い、返金処理が必要にならない順序にしている。</p>
+     * <p>購入可否の確認を決済前に完了させることで、
+     * 途中失敗時の返金処理を不要にする。</p>
      *
      * @param player   購入者
      * @param shopItem 購入対象商品
      */
     public void buy(Player player, ShopItemDto shopItem) {
-        if (player.getInventory().firstEmpty() == -1 && !shopItem.isCommandItem()) {
+        if (!hasInventorySpace(player, shopItem)) {
             player.sendMessage(MessageUtil.red("インベントリに空きがありません。"));
             return;
         }
 
-        if (shopItem.getLimit() >= 0) {
-            int currentCount = shopPurchaseRepository.findPurchaseCount(player.getUniqueId(), shopItem.getId());
-
-            if (currentCount >= shopItem.getLimit()) {
-                player.sendMessage(MessageUtil.red("この商品は購入上限に達しています。"));
-                player.sendMessage(MessageUtil.mm(
-                        "<gray>購入済み: </gray><yellow>" + currentCount + "</yellow>" +
-                                "<gray> / 上限: </gray><yellow>" + shopItem.getLimit() + "</yellow>"
-                ));
-                return;
-            }
-        }
-
-        if (!moneyRepository.subtractMoney(player.getUniqueId(), shopItem.getPrice())) {
-            int currentMoney = moneyRepository.findMoney(player.getUniqueId());
-
-            player.sendMessage(MessageUtil.red("所持金が足りません。"));
-            player.sendMessage(MessageUtil.mm(
-                    "<gray>必要: </gray><gold>" + shopItem.getPrice() + "G</gold>" +
-                            "<gray> / 現在: </gray><gold>" + currentMoney + "G</gold>"
-            ));
+        if (hasReachedPurchaseLimit(player, shopItem)) {
+            sendLimitReachedMessage(player, shopItem);
             return;
         }
 
-        if (shopItem.isCommandItem()) {
-            buyCommands(player, shopItem);
-        } else {
-            buyItem(player, shopItem);
+        if (!withdrawMoney(player, shopItem)) {
+            sendInsufficientMoneyMessage(player, shopItem);
+            return;
         }
 
-        shopPurchaseRepository.incrementPurchaseCount(player.getUniqueId(), shopItem.getId());
+        deliverProduct(player, shopItem);
+        recordPurchase(player, shopItem);
+        sendPurchaseCompletedMessage(player, shopItem);
 
+    }
+
+    /**
+     * 購入商品を受け取るためのインベントリ空きがあるか判定する。
+     *
+     * <p>COMMAND商品はインベントリへ追加しないため、空きスロット確認を不要とする。</p>
+     *
+     * @param player   購入者
+     * @param shopItem 購入対象商品
+     * @return 購入可能な空きがある場合true
+     */
+    private boolean hasInventorySpace(Player player, ShopItemDto shopItem) {
+        return shopItem.isCommandItem() || player.getInventory().firstEmpty() != -1;
+    }
+
+    /**
+     * 購入上限に到達しているか判定する。
+     *
+     * @param player   購入者
+     * @param shopItem 購入対象商品
+     * @return 購入上限に到達している場合true
+     */
+    private boolean hasReachedPurchaseLimit(Player player, ShopItemDto shopItem) {
+        if (shopItem.getLimit() < 0) {
+            return false;
+        }
+
+        int currentCount = shopPurchaseRepository.findPurchaseCount(
+                player.getUniqueId(),
+                shopItem.getId()
+        );
+
+        return currentCount >= shopItem.getLimit();
+    }
+
+    /**
+     * 購入上限到達メッセージを送信する。
+     *
+     * @param player   購入者
+     * @param shopItem 購入対象商品
+     */
+    private void sendLimitReachedMessage(Player player, ShopItemDto shopItem) {
+        int currentCount = shopPurchaseRepository.findPurchaseCount(
+                player.getUniqueId(),
+                shopItem.getId()
+        );
+
+        player.sendMessage(MessageUtil.red("この商品は購入上限に達しています。"));
+        player.sendMessage(MessageUtil.mm(
+                "<gray>購入済み: </gray><yellow>" + currentCount + "</yellow>" +
+                        "<gray> / 上限: </gray><yellow>" + shopItem.getLimit() + "</yellow>"
+        ));
+    }
+
+    /**
+     * 商品代金を所持金から差し引く。
+     *
+     * @param player   購入者
+     * @param shopItem 購入対象商品
+     * @return 支払いに成功した場合true
+     */
+    private boolean withdrawMoney(Player player, ShopItemDto shopItem) {
+        return moneyRepository.subtractMoney(player.getUniqueId(), shopItem.getPrice());
+    }
+
+    /**
+     * 所持金不足メッセージを送信する。
+     *
+     * @param player   購入者
+     * @param shopItem 購入対象商品
+     */
+    private void sendInsufficientMoneyMessage(Player player, ShopItemDto shopItem) {
+        int currentMoney = moneyRepository.findMoney(player.getUniqueId());
+
+        player.sendMessage(MessageUtil.red("所持金が足りません。"));
+        player.sendMessage(MessageUtil.mm(
+                "<gray>必要: </gray><gold>" + shopItem.getPrice() + "G</gold>" +
+                        "<gray> / 現在: </gray><gold>" + currentMoney + "G</gold>"
+        ));
+    }
+
+    /**
+     * 購入商品をプレイヤーへ付与する。
+     *
+     * @param player   購入者
+     * @param shopItem 購入対象商品
+     */
+    private void deliverProduct(Player player, ShopItemDto shopItem) {
+        if (shopItem.isCommandItem()) {
+            buyCommands(player, shopItem);
+            return;
+        }
+
+        buyItem(player, shopItem);
+    }
+
+    /**
+     * 購入履歴を記録する。
+     *
+     * <p>購入上限は再起動後も維持する必要があるため、
+     * 商品付与完了後に永続化対象の購入回数を更新する。</p>
+     *
+     * @param player   購入者
+     * @param shopItem 購入対象商品
+     */
+    private void recordPurchase(Player player, ShopItemDto shopItem) {
+        shopPurchaseRepository.incrementPurchaseCount(player.getUniqueId(), shopItem.getId());
+    }
+
+    /**
+     * 購入完了メッセージを送信する。
+     *
+     * @param player   購入者
+     * @param shopItem 購入対象商品
+     */
+    private void sendPurchaseCompletedMessage(Player player, ShopItemDto shopItem) {
         player.sendMessage(MessageUtil.mm(
                 "<yellow>購入しました: </yellow>" + shopItem.getName() +
                         " <gray>x" + shopItem.getAmount() + "</gray>" +
                         " <gray>-" + shopItem.getPrice() + "G</gray>"
         ));
-    }
-
-    /**
-     * 手持ちアイテムを売却する。
-     *
-     * @param player 売却者
-     * @return 売却処理結果
-     */
-    public boolean sellHandItem(Player player) {
-        ItemStack itemInHand = player.getInventory().getItemInMainHand();
-
-        if (itemInHand.getType() == Material.AIR) {
-            player.sendMessage(MessageUtil.red("売却するアイテムを手に持ってください。"));
-            return true;
-        }
-
-        ShopItemDto shopItem = shopRepository.findShopSellableItem(itemInHand.getType());
-
-        if (shopItem == null) {
-            player.sendMessage(MessageUtil.red("このアイテムは売却できません。"));
-            return true;
-        }
-
-        int sellAmount = 1;
-        int totalPrice = shopItem.getSellPrice() * sellAmount;
-
-        itemInHand.setAmount(itemInHand.getAmount() - sellAmount);
-        moneyRepository.addMoney(player.getUniqueId(), totalPrice);
-
-        player.sendMessage(MessageUtil.mm(
-                "<yellow>売却しました: </yellow>" +
-                        shopItem.getName() +
-                        " <gray>x" + sellAmount + "</gray>" +
-                        " <gold>+" + totalPrice + "G</gold>"
-        ));
-
-        return true;
     }
 
     /**
@@ -157,6 +217,110 @@ public class ShopService {
         );
 
         player.getInventory().addItem(itemStack);
+    }
+
+    /**
+     * 手に持っているアイテムを売却します。
+     *
+     * @param player 売却するプレイヤー
+     */
+    public void sellHandItem(final Player player) {
+        if (isEmptyHand(player)) {
+            sendCannotSellMessage(player);
+            return;
+        }
+
+        final ItemStack item = player.getInventory().getItemInMainHand();
+        final int sellPrice = calculateSellPrice(item);
+
+        if (sellPrice <= 0) {
+            sendCannotSellMessage(player);
+            return;
+        }
+
+        removeSoldItem(player);
+        depositMoney(player, sellPrice);
+        sendSellCompletedMessage(player, item, sellPrice);
+    }
+
+    /**
+     * プレイヤーが何も持っていないか判定します。
+     *
+     * @param player 対象プレイヤー
+     * @return AIRの場合true
+     */
+    private boolean isEmptyHand(final Player player) {
+        return player.getInventory().getItemInMainHand().getType().isAir();
+    }
+
+    /**
+     * 売却価格を計算します。
+     *
+     * @param item 売却対象
+     * @return 売却価格
+     */
+    private int calculateSellPrice(final ItemStack item) {
+        return shopRepository.findSellPrice(item);
+    }
+
+    /**
+     * 売却したアイテムを削除します。
+     *
+     * @param player 対象プレイヤー
+     */
+    private void removeSoldItem(final Player player) {
+
+        // 売却済みアイテムが残ると複製できるため、
+        // 通貨付与前に必ず削除する。
+        player.getInventory().setItemInMainHand(null);
+    }
+
+    /**
+     * 売却代金を付与します。
+     *
+     * @param player 対象プレイヤー
+     * @param amount 金額
+     */
+    private void depositMoney(final Player player, final int amount) {
+        moneyRepository.deposit(player.getUniqueId(), amount);
+    }
+
+    /**
+     * 売却完了メッセージを送信します。
+     *
+     * @param player 対象プレイヤー
+     * @param item   売却アイテム
+     * @param price  売却価格
+     */
+    private void sendSellCompletedMessage(
+            final Player player,
+            final ItemStack item,
+            final int price
+    ) {
+        player.sendMessage(
+                MessageUtil.mm(
+                        "<green>"
+                                + item.getAmount()
+                                + "個の"
+                                + item.getType().name()
+                                + " を "
+                                + price
+                                + "G で売却しました。"
+                )
+        );
+    }
+
+    /**
+     * 売却できない場合のメッセージを送信します。
+     *
+     * @param player 対象プレイヤー
+     */
+    private void sendCannotSellMessage(final Player player) {
+        player.sendMessage(
+                MessageUtil.red(
+                        "<red>このアイテムは売却できません。"
+                )
+        );
     }
 
     /**

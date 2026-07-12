@@ -32,7 +32,7 @@ public interface IShopRepository {
      * Repository内のみが保持し、外部から直接変更しないことを前提とする。
      * </p>
      */
-    ShopDto getShop();
+    ShopDto getShopDto();
 
     /**
      * 設定ファイルを読み込み {@link ShopDto} を生成し保持する
@@ -47,7 +47,7 @@ public interface IShopRepository {
      *
      * @return カテゴリリスト
      */
-    List<ShopCategoryDto> getShopCategoryList();
+    List<ShopCategoryDto> findCategories();
 
     /**
      * カテゴリIDからSHOPカテゴリを取得する。
@@ -72,14 +72,12 @@ public interface IShopRepository {
     ShopCategoryDto findShopCategoryBySlot(int slot);
 
     /**
-     * アイテム一覧を取得する
+     * 指定カテゴリの商品一覧を取得する。
      *
-     * <p>アイテムのみ全種取得する
-     * 将来DB化しても呼び出し側の変更を最小化する。</p>
-     *
-     * @return SHOP商品リスト
+     * @param categoryId カテゴリID
+     * @return 商品一覧
      */
-    List<ShopItemDto> getShopItemList();
+    List<ShopItemDto> findShopItems(String categoryId);
 
     /**
      * IDからSHOP商品を取得する。
@@ -113,5 +111,4 @@ public interface IShopRepository {
      * @return 売却可能商品。存在しない場合はnull
      */
     ShopItemDto findShopSellableItem(Material material);
-    
 }

@@ -50,7 +50,7 @@ public class ShopCommand implements CommandExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage(MessageUtil.red("このコマンドはプレイヤーのみ実行できます。"));
-            return true;
+            return false;
         }
 
         if (args.length == 0) {
@@ -59,10 +59,11 @@ public class ShopCommand implements CommandExecutor {
         }
 
         if (args[0].equalsIgnoreCase("sell")) {
-            return shopService.sellHandItem(player);
+            shopService.sellHandItem(player);
+            return true;
         }
 
         player.sendMessage(MessageUtil.yellow("使用方法： /shop または /shop sell"));
-        return true;
+        return false;
     }
 }

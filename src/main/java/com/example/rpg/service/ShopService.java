@@ -233,8 +233,10 @@ public class ShopService {
      * @param player 売却するプレイヤー
      */
     public boolean sellHandItem(final Player player, int amount) {
-        if (amount == 0 || amount > 64)
+        if (amount == 0 || amount > 64) {
             player.sendMessage(MessageUtil.red("売却個数を1~64(1stack)の範囲で指定してくだい。"));
+            return false;
+        }
 
         final ItemStack itemInHand = player.getInventory().getItemInMainHand();
 
@@ -244,7 +246,7 @@ public class ShopService {
         }
 
         if (hasInsufficientItemAmount(itemInHand, amount)) {
-            sendInsufficientItemAmountMessage(player);
+            sendInsufficientItemAmountMessage(player, amount);
             return false;
         }
 
@@ -367,10 +369,13 @@ public class ShopService {
      *
      * @param player 対象プレイヤー
      */
-    private void sendInsufficientItemAmountMessage(final Player player) {
-        player.sendMessage(
-                MessageUtil.red("売却個数が所持個数よりも多いです。")
-        );
+    private void sendInsufficientItemAmountMessage(final Player player, int amount) {
+        final int currentAmount = player.getInventory().getItemInMainHand().getAmount();
+        player.sendMessage(MessageUtil.mm(
+                "<red>手持ちアイテムの個数が不足しています。</red>"
+                        + " <gray>指定: " + amount
+                        + " / 所持: " + currentAmount + "</gray>"
+        ));
     }
 
     /**

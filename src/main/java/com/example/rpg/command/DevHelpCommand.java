@@ -64,11 +64,11 @@ public class DevHelpCommand implements CommandExecutor, TabCompleter {
             @NotNull String @NonNull [] args
     ) {
         if (args.length == 1) {
-            return List.of("hand");
+            return filter(List.of("hand"), args[0]);
         }
 
-        if (args.length == 2 && args[0].equalsIgnoreCase("sell")) {
-            return List.of("amount");
+        if (args.length == 2 && args[0].equalsIgnoreCase("hand")) {
+            return filter(List.of("amount"), args[1]);
         }
 
         return List.of();

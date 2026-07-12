@@ -19,7 +19,6 @@ import org.bukkit.inventory.ItemStack;
  * ServiceをBukkit GUIから切り離すことで、将来的なNPCショップやAPI連携にも対応しやすくする。</p>
  */
 public class ShopService {
-
     /**
      * SHOP商品情報の取得元。
      */
@@ -220,106 +219,168 @@ public class ShopService {
     }
 
     /**
-     * 手に持っているアイテムを売却します。
+     * 手に持っているアイテムを1個売却する。
      *
      * @param player 売却するプレイヤー
      */
-    public void sellHandItem(final Player player) {
-        if (isEmptyHand(player)) {
-            sendCannotSellMessage(player);
-            return;
-        }
-
-        final ItemStack item = player.getInventory().getItemInMainHand();
-        final int sellPrice = calculateSellPrice(item);
-
-        if (sellPrice <= 0) {
-            sendCannotSellMessage(player);
-            return;
-        }
-
-        removeSoldItem(player);
-        depositMoney(player, sellPrice);
-        sendSellCompletedMessage(player, item, sellPrice);
+    public boolean sellHandItem(final Player player) {
+        return sellHandItem(player, 1);
     }
 
     /**
-     * プレイヤーが何も持っていないか判定します。
+     * 手に持っているアイテムを指定個数売却する。
      *
-     * @param player 対象プレイヤー
+     * @param player 売却するプレイヤー
+     */
+    public boolean sellHandItem(final Player player, int amount) {
+        if (amount == 0 || amount > 64)
+            player.sendMessage(MessageUtil.red("売却個数を1~64(1stack)の範囲で指定してくだい。"));
+
+        final ItemStack itemInHand = player.getInventory().getItemInMainHand();
+
+        if (isEmptyHand(itemInHand)) {
+            sendEmptyHandMessage(player);
+            return false;
+        }
+
+        if (hasInsufficientItemAmount(itemInHand, amount)) {
+            sendInsufficientItemAmountMessage(player);
+            return false;
+        }
+
+        final ShopItemDto shopItem = findSellableItem(itemInHand);
+
+        if (shopItem == null) {
+            sendCannotSellMessage(player);
+            return false;
+        }
+
+        final int totalPrice = calculateSellPrice(shopItem, amount);
+
+        removeSoldItem(itemInHand, amount);
+        depositMoney(player, totalPrice);
+        sendSellCompletedMessage(player, shopItem, amount, totalPrice);
+
+        return true;
+    }
+
+    /**
+     * 手持ちアイテムが空か判定する。
+     *
+     * @param itemInHand 手持ちアイテム
      * @return AIRの場合true
      */
-    private boolean isEmptyHand(final Player player) {
-        return player.getInventory().getItemInMainHand().getType().isAir();
+    private boolean isEmptyHand(final ItemStack itemInHand) {
+        return itemInHand.getType().isAir();
     }
 
     /**
-     * 売却価格を計算します。
+     * 手持ちアイテムの個数が売却個数未満か判定する。
      *
-     * @param item 売却対象
-     * @return 売却価格
+     * @param itemInHand 手持ちアイテム
+     * @param amount     売却個数
+     * @return 手持ちアイテムが売却個数未満ならtrue
      */
-    private int calculateSellPrice(final ItemStack item) {
-        return shopRepository.findSellPrice(item);
+    private boolean hasInsufficientItemAmount(final ItemStack itemInHand, int amount) {
+        return itemInHand.getAmount() < amount;
     }
 
     /**
-     * 売却したアイテムを削除します。
+     * 手持ちアイテムに対応する売却可能商品を取得する。
      *
-     * @param player 対象プレイヤー
+     * @param itemInHand 手持ちアイテム
+     * @return 売却可能商品。存在しない場合はnull
      */
-    private void removeSoldItem(final Player player) {
-
-        // 売却済みアイテムが残ると複製できるため、
-        // 通貨付与前に必ず削除する。
-        player.getInventory().setItemInMainHand(null);
+    private ShopItemDto findSellableItem(final ItemStack itemInHand) {
+        return shopRepository.findShopSellableItem(itemInHand.getType());
     }
 
     /**
-     * 売却代金を付与します。
+     * 売却価格を計算する。
      *
-     * @param player 対象プレイヤー
-     * @param amount 金額
+     * @param shopItem 売却対象の商品定義
+     * @param amount   売却個数
+     * @return 今回の売却金額
+     */
+    private int calculateSellPrice(final ShopItemDto shopItem, int amount) {
+        return shopItem.getSellPrice() * amount;
+    }
+
+    /**
+     * 売却した個数を手持ちアイテムから減らす。
+     *
+     * @param itemInHand 手持ちアイテム
+     * @param amount     売却個数
+     */
+    private void removeSoldItem(final ItemStack itemInHand, int amount) {
+
+        // ItemStack#setAmountは0以下になった場合にAIRとして扱われるため、
+        // スタック全体を削除せず今回売却した個数だけ減算する。
+        itemInHand.setAmount(itemInHand.getAmount() - amount);
+    }
+
+    /**
+     * 売却代金を所持金へ加算する。
+     *
+     * @param player 売却したプレイヤー
+     * @param amount 加算する金額
      */
     private void depositMoney(final Player player, final int amount) {
-        moneyRepository.deposit(player.getUniqueId(), amount);
+        moneyRepository.addMoney(player.getUniqueId(), amount);
     }
 
     /**
-     * 売却完了メッセージを送信します。
+     * 売却完了メッセージを送信する。
      *
-     * @param player 対象プレイヤー
-     * @param item   売却アイテム
-     * @param price  売却価格
+     * @param player   売却したプレイヤー
+     * @param shopItem 売却した商品
+     * @param amount   売却個数
+     * @param price    売却金額
      */
     private void sendSellCompletedMessage(
             final Player player,
-            final ItemStack item,
+            final ShopItemDto shopItem,
+            final int amount,
             final int price
     ) {
+        player.sendMessage(MessageUtil.mm(
+                "<yellow>売却しました: </yellow>"
+                        + shopItem.getName()
+                        + " <gray>x" + amount + "</gray>"
+                        + " <gold>+" + price + "G</gold>"
+        ));
+    }
+
+    /**
+     * 手持ちアイテムがない場合のメッセージを送信する。
+     *
+     * @param player 対象プレイヤー
+     */
+    private void sendEmptyHandMessage(final Player player) {
         player.sendMessage(
-                MessageUtil.mm(
-                        "<green>"
-                                + item.getAmount()
-                                + "個の"
-                                + item.getType().name()
-                                + " を "
-                                + price
-                                + "G で売却しました。"
-                )
+                MessageUtil.red("売却するアイテムを手に持ってください。")
         );
     }
 
     /**
-     * 売却できない場合のメッセージを送信します。
+     * 手持ちアイテムがない場合のメッセージを送信する。
+     *
+     * @param player 対象プレイヤー
+     */
+    private void sendInsufficientItemAmountMessage(final Player player) {
+        player.sendMessage(
+                MessageUtil.red("売却個数が所持個数よりも多いです。")
+        );
+    }
+
+    /**
+     * 売却対象として登録されていない場合のメッセージを送信する。
      *
      * @param player 対象プレイヤー
      */
     private void sendCannotSellMessage(final Player player) {
         player.sendMessage(
-                MessageUtil.red(
-                        "<red>このアイテムは売却できません。"
-                )
+                MessageUtil.red("このアイテムは売却できません。")
         );
     }
 

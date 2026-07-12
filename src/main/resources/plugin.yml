@@ -24,6 +24,10 @@ commands:
     description: RPGShop admin command
     usage: /admin <reload|open|resetshop|resetall> <player>
     permission: rpg.admin.shop
+  devhelp:
+    description: 開発用コマンド
+    usage: /devhelp <hand> <amount>
+    permission: rpg.admin
 
 permissions:
   rpg.admin:

@@ -142,7 +142,9 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      *
      */
     private void registerCommands() {
-        Objects.requireNonNull(getCommand("shop")).setExecutor(new ShopCommand(shopGuiFacade, shopService));
+        ShopCommand shopCommand = new ShopCommand(shopGuiFacade, shopService);
+        Objects.requireNonNull(getCommand("shop")).setExecutor(shopCommand);
+        Objects.requireNonNull(getCommand("shop")).setTabCompleter(shopCommand);
 
         MoneyCommand moneyCommand = new MoneyCommand(moneyRepository);
         Objects.requireNonNull(getCommand("money")).setExecutor(moneyCommand);
@@ -155,6 +157,11 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         AdminCommand adminCommand = new AdminCommand(shopPurchaseRepository);
         Objects.requireNonNull(getCommand("admin")).setExecutor(adminCommand);
         Objects.requireNonNull(getCommand("admin")).setTabCompleter(adminCommand);
+
+        // 開発時に使用するヘルプコマンド
+        DevHelpCommand devcommand = new DevHelpCommand(this);
+        Objects.requireNonNull(getCommand("devhelp")).setExecutor(devcommand);
+        Objects.requireNonNull(getCommand("devhelp")).setTabCompleter(devcommand);
     }
 
     /**

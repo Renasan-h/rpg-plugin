@@ -1,14 +1,12 @@
 package com.example.rpg.command;
 
-import com.example.rpg.facade.ShopGuiFacade;
-import com.example.rpg.service.ShopService;
 import com.example.rpg.util.MessageUtil;
-import com.example.rpg.util.RpgUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
@@ -16,32 +14,12 @@ import org.jspecify.annotations.NonNull;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * SHOPコマンドの受付を担当するクラス。
- *
- * <p>コマンドは入力受付のみを担当し、GUI表示や売却処理の詳細はFacadeへ委譲する。</p>
- */
+public class DevHelpCommand implements CommandExecutor, TabCompleter {
 
-public class ShopCommand implements CommandExecutor, TabCompleter {
+    private final JavaPlugin plugin;
 
-    /**
-     * SHOP GUI FACADE
-     */
-    private final ShopGuiFacade shopGuiFacade;
-    /**
-     * SHOP業務処理クラス
-     */
-    private final ShopService shopService;
-
-    /**
-     * SHOPコマンドを生成する。
-     *
-     * @param shopGuiFacade SHOP GUI Facade
-     * @param shopService   SHOP業務処理クラス
-     */
-    public ShopCommand(ShopGuiFacade shopGuiFacade, ShopService shopService) {
-        this.shopGuiFacade = shopGuiFacade;
-        this.shopService = shopService;
+    public DevHelpCommand(JavaPlugin plugin) {
+        this.plugin = plugin;
     }
 
     /**
@@ -59,25 +37,22 @@ public class ShopCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(MessageUtil.red("このコマンドはプレイヤーのみ実行できます。"));
             return false;
         }
-
         if (args.length == 0) {
-            shopGuiFacade.openCategory(player);
-            return true;
+            player.sendMessage(MessageUtil.yellow("使用方法： /devhelp hand amount"));
+            return false;
         }
 
-        // 手に持っているアイテムを指定個数販売する
-        if (args[0].equalsIgnoreCase("sell")) {
-            if (args.length == 2) {
-                int amount = RpgUtil.getIntOrDefault(args[1]);
-                if (amount < 0) return false;
-                shopService.sellHandItem(player, amount);
-                return true;
+        if (args[0].equalsIgnoreCase("hand")) {
+            if (args.length > 1) {
+                if (args[1].equalsIgnoreCase("amount")) {
+                    player.sendMessage(MessageUtil.green("手持ちアイテムamount：" + player.getInventory().getItemInMainHand().getAmount()));
+                    return true;
+                }
             }
-            shopService.sellHandItem(player);
-            return true;
+
         }
 
-        player.sendMessage(MessageUtil.yellow("使用方法： /shop または /shop sell amount"));
+        player.sendMessage(MessageUtil.yellow("使用方法： /devhelp または /devhelp hand amount"));
         return false;
     }
 
@@ -89,11 +64,11 @@ public class ShopCommand implements CommandExecutor, TabCompleter {
             @NotNull String @NonNull [] args
     ) {
         if (args.length == 1) {
-            return filter(List.of("sell"), args[0]);
+            return List.of("hand");
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("sell")) {
-            return List.of("1", "5", "10", "64");
+            return List.of("amount");
         }
 
         return List.of();

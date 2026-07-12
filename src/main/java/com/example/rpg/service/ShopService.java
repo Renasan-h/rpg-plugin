@@ -233,7 +233,7 @@ public class ShopService {
      * @param player 売却するプレイヤー
      */
     public boolean sellHandItem(final Player player, int amount) {
-        if (amount == 0 || amount > 64) {
+        if (amount <= 0 || amount > 64) {
             player.sendMessage(MessageUtil.red("売却個数を1~64(1stack)の範囲で指定してくだい。"));
             return false;
         }

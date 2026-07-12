@@ -6,7 +6,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
@@ -16,10 +15,7 @@ import java.util.Locale;
 
 public class DevHelpCommand implements CommandExecutor, TabCompleter {
 
-    private final JavaPlugin plugin;
-
-    public DevHelpCommand(JavaPlugin plugin) {
-        this.plugin = plugin;
+    public DevHelpCommand() {
     }
 
     /**

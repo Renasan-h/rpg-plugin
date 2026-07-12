@@ -29,7 +29,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      */
     ExpService expService;
     /**
-     * ショップRepository
+     * ShopRepository
      */
     private ShopRepository shopRepository;
     /**
@@ -41,16 +41,16 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      */
     private ShopPurchaseRepository shopPurchaseRepository;
     /**
-     * ショップService
+     * ShopService
      */
     private ShopService shopService;
     /**
-     * ショップMenu
+     * ShopMenu
      */
     private ShopMenu shopMenu;
 
     /**
-     * ショップFacade
+     * ShopFacade
      */
     private ShopGuiFacade shopGuiFacade;
 
@@ -159,9 +159,9 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("admin")).setTabCompleter(adminCommand);
 
         // 開発時に使用するヘルプコマンド
-        DevHelpCommand devcommand = new DevHelpCommand(this);
-        Objects.requireNonNull(getCommand("devhelp")).setExecutor(devcommand);
-        Objects.requireNonNull(getCommand("devhelp")).setTabCompleter(devcommand);
+        DevHelpCommand devCommand = new DevHelpCommand();
+        Objects.requireNonNull(getCommand("devhelp")).setExecutor(devCommand);
+        Objects.requireNonNull(getCommand("devhelp")).setTabCompleter(devCommand);
     }
 
     /**

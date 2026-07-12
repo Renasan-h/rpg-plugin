@@ -118,19 +118,61 @@ public class ShopGuiFacade {
      * @param event  インベントリクリックイベント
      * @param holder 商品一覧GUI Holder
      */
-    private void handleItemClick(Player player, InventoryClickEvent event, ItemMenuHolder holder) {
-        ItemStack clicked = event.getCurrentItem();
+    private void handleItemClick(
+            final Player player,
+            final InventoryClickEvent event,
+            final ItemMenuHolder holder
+    ) {
+        final int clickedSlot = event.getRawSlot();
+        final int inventorySize = event.getView().getTopInventory().getSize();
 
-        if (clicked == null || clicked.getType() == Material.AIR) {
+        if (clickedSlot == shopMenu.getPreviousPageSlot(inventorySize)) {
+            openItemPage(player, holder, holder.getPage() - 1);
             return;
         }
 
-        ShopItemDto item = shopRepository.findShopItemBySlot(holder.getCategoryId(), event.getRawSlot());
+        if (clickedSlot == shopMenu.getNextPageSlot(inventorySize)) {
+            openItemPage(player, holder, holder.getPage() + 1);
+            return;
+        }
+
+        final String itemId = holder.findItemIdBySlot(clickedSlot);
+
+        if (itemId == null) {
+            return;
+        }
+
+        final ShopItemDto item = shopRepository.findShopItemById(itemId);
 
         if (item == null) {
             return;
         }
 
         shopService.buy(player, item);
+    }
+
+    /**
+     * 指定ページの商品一覧画面を表示する。
+     *
+     * @param player 操作プレイヤー
+     * @param holder 現在の画面情報
+     * @param page   遷移先ページ
+     */
+    private void openItemPage(
+            final Player player,
+            final ItemMenuHolder holder,
+            final int page
+    ) {
+        final ShopCategoryDto category = shopRepository.findShopCategoryById(holder.getCategoryId());
+
+        if (category == null) {
+            return;
+        }
+
+        shopMenu.openShopItemByCategory(
+                player,
+                category,
+                page
+        );
     }
 }

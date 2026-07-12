@@ -18,6 +18,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * SHOP GUIの生成と表示を担当するMenu。
@@ -55,7 +56,22 @@ public class ShopMenu {
      */
     private static final String ITEM_TITLE_SEPARATOR =
             " <gray>-</gray> ";
-
+    /**
+     * ページ操作領域として予約する行数。
+     */
+    private static final int NAVIGATION_ROW_SIZE = 9;
+    /**
+     * 前ページボタンの最終行内オフセット。
+     */
+    private static final int PREVIOUS_PAGE_OFFSET = 0;
+    /**
+     * ページ情報の最終行内オフセット。
+     */
+    private static final int PAGE_INDICATOR_OFFSET = 4;
+    /**
+     * 次ページボタンの最終行内オフセット。
+     */
+    private static final int NEXT_PAGE_OFFSET = 8;
     /**
      * SHOP設定情報の取得元。
      */
@@ -88,25 +104,64 @@ public class ShopMenu {
     }
 
     /**
-     * 指定カテゴリの商品一覧画面を開く。
+     * 指定カテゴリの商品一覧画面の1ページ目を開く。
      *
      * @param player   表示対象プレイヤー
      * @param category 表示対象カテゴリ
      */
     public void openShopItemByCategory(
-            Player player, ShopCategoryDto category
+            Player player,
+            ShopCategoryDto category
+    ) {
+        openShopItemByCategory(player, category, 0);
+    }
+
+    /**
+     * 指定カテゴリの商品一覧画面を開く。
+     *
+     * @param player   表示対象プレイヤー
+     * @param category 表示対象カテゴリ
+     * @param page     表示ページ番号
+     */
+    public void openShopItemByCategory(
+            final Player player,
+            final ShopCategoryDto category,
+            final int page
     ) {
         final ShopDto shop = shopRepository.getShopDto();
         final int inventorySize = normalizeInventorySize(shop.getSize());
+        final List<ShopItemDto> items = findDisplayableItems(player, category);
+        final int pageSize = calculatePageSize(inventorySize);
+        final int totalPages = calculateTotalPages(items.size(), pageSize);
+        final int normalizedPage = normalizePage(page, totalPages);
+        final List<ShopItemDto> pageItems = extractPageItems(items, normalizedPage, pageSize);
+
+        final ItemMenuHolder holder = new ItemMenuHolder(
+                category.getId(),
+                normalizedPage,
+                pageItems.stream().map(ShopItemDto::getId).toList()
+        );
+
 
         Inventory inventory = Bukkit.createInventory(
-                new ItemMenuHolder(category.getId()),
+                holder,
                 inventorySize,
-                createItemMenuTitle(shop, category)
+                createItemMenuTitle(
+                        shop,
+                        category,
+                        normalizedPage,
+                        totalPages
+                )
         );
 
         fillDecoration(inventory);
         placeShopItems(inventory, player, category);
+        placeNavigationItems(
+                inventory,
+                normalizedPage,
+                totalPages
+        );
+
         player.openInventory(inventory);
     }
 
@@ -221,6 +276,10 @@ public class ShopMenu {
 
         meta.displayName(MessageUtil.mm(item.getDisplayName()));
         meta.lore(createItemLore(item));
+        // SHOP商品はRPG専用Loreで性能を表現するため、
+        // Minecraft標準の攻撃力や追加Tooltipを表示しない。
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        meta.setHideTooltip(false);
 
         itemStack.setItemMeta(meta);
         return itemStack;
@@ -249,16 +308,29 @@ public class ShopMenu {
     /**
      * 商品一覧画面のタイトルを生成する。
      *
-     * @param shop     SHOP定義
-     * @param category カテゴリ定義
+     * @param shop        SHOP定義
+     * @param category    カテゴリ定義
+     * @param currentPage 現在ページ
+     * @param totalPages  総ページ数
      * @return 商品一覧画面タイトル
      */
     private Component createItemMenuTitle(
             final ShopDto shop,
-            final ShopCategoryDto category
+            final ShopCategoryDto category,
+            final int currentPage,
+            final int totalPages
     ) {
-        return MessageUtil.mm(shop.getTitle()
-                + ITEM_TITLE_SEPARATOR + category.getName());
+        return MessageUtil.mm(
+                shop.getTitle()
+                        + ITEM_TITLE_SEPARATOR
+                        + category.getName()
+                        + category.getName()
+                        + " <gray>("
+                        + (currentPage + 1)
+                        + "/"
+                        + totalPages
+                        + ")</gray>"
+        );
     }
 
     /**
@@ -329,6 +401,229 @@ public class ShopMenu {
         // 設定値を切り上げ最も近い有効サイズへ補正する
         return Math.min(boundedSize + INVENTORY_ROW_SIZE - remainder,
                 MAX_INVENTORY_SIZE);
+    }
+
+    /**
+     * 表示可能な商品一覧を取得する。
+     *
+     * @param player   表示対象プレイヤー
+     * @param category 表示対象カテゴリ
+     * @return 表示可能商品一覧
+     */
+    private List<ShopItemDto> findDisplayableItems(
+            final Player player,
+            final ShopCategoryDto category
+    ) {
+        return shopRepository.findShopItems(category.getId())
+                .stream()
+                .filter(item -> canDisplayItem(player, item))
+                .toList();
+    }
+
+    /**
+     * 現在ページの商品を抽出する。
+     *
+     * @param items    全商品
+     * @param page     ページ番号
+     * @param pageSize 1ページの表示件数
+     * @return 現在ページの商品
+     */
+    private List<ShopItemDto> extractPageItems(
+            final List<ShopItemDto> items,
+            final int page,
+            final int pageSize
+    ) {
+        final int fromIndex = page * pageSize;
+        final int toIndex = Math.min(
+                fromIndex + pageSize,
+                items.size()
+        );
+
+        if (fromIndex >= items.size()) {
+            return List.of();
+        }
+
+        return List.copyOf(items.subList(fromIndex, toIndex));
+    }
+
+    private void placePageItems(
+            final Inventory inventory,
+            final List<ShopItemDto> pageItems
+    ) {
+        IntStream.range(0, pageItems.size())
+                .forEach(slot -> inventory.setItem(
+                        slot,
+                        createShopItem(pageItems.get(slot))
+                ));
+    }
+
+    /**
+     * ページ操作アイテムを配置する。
+     *
+     * @param inventory   配置対象Inventory
+     * @param currentPage 現在ページ
+     * @param totalPages  総ページ数
+     */
+    private void placeNavigationItems(
+            final Inventory inventory,
+            final int currentPage,
+            final int totalPages
+    ) {
+        inventory.setItem(
+                getPageIndicatorSlot(inventory.getSize()),
+                createPageIndicator(currentPage, totalPages)
+        );
+
+        if (currentPage > 0) {
+            inventory.setItem(
+                    getPreviousPageSlot(inventory.getSize()),
+                    createPreviousPageButton()
+            );
+        }
+
+        if (currentPage + 1 < totalPages) {
+            inventory.setItem(
+                    getNextPageSlot(inventory.getSize()),
+                    createNextPageButton()
+            );
+        }
+    }
+
+    /**
+     * 前ページボタンを生成する。
+     *
+     * @return 前ページボタン
+     */
+    private ItemStack createPreviousPageButton() {
+        return createNavigationItem(
+                Material.ARROW,
+                "<yellow>前のページ</yellow>"
+        );
+    }
+
+    /**
+     * 次ページボタンを生成する。
+     *
+     * @return 次ページボタン
+     */
+    private ItemStack createNextPageButton() {
+        return createNavigationItem(
+                Material.ARROW,
+                "<yellow>次のページ</yellow>"
+        );
+    }
+
+    /**
+     * ページ情報アイテムを生成する。
+     *
+     * @param currentPage 現在ページ
+     * @param totalPages  総ページ数
+     * @return ページ情報アイテム
+     */
+    private ItemStack createPageIndicator(
+            final int currentPage,
+            final int totalPages
+    ) {
+        return createNavigationItem(
+                Material.PAPER,
+                "<gold>" + (currentPage + 1) + " / " + totalPages + " ページ</gold>"
+        );
+    }
+
+    /**
+     * ページ操作アイテムを生成する。
+     *
+     * @param material アイテムのMaterial
+     * @param name     表示名
+     * @return ページ操作アイテム
+     */
+    private ItemStack createNavigationItem(
+            final Material material,
+            final String name
+    ) {
+        final ItemStack itemStack = new ItemStack(material);
+        final ItemMeta meta = itemStack.getItemMeta();
+
+        meta.displayName(MessageUtil.mm(name));
+        meta.setHideTooltip(false);
+
+        itemStack.setItemMeta(meta);
+        return itemStack;
+    }
+
+    /**
+     * 商品表示領域のスロット数を計算する。
+     *
+     * @param inventorySize GUIサイズ
+     * @return 1ページの表示件数
+     */
+    private int calculatePageSize(final int inventorySize) {
+        return inventorySize - NAVIGATION_ROW_SIZE;
+    }
+
+    /**
+     * 総ページ数を計算する。
+     *
+     * @param itemCount 商品数
+     * @param pageSize  1ページの表示件数
+     * @return 総ページ数
+     */
+    private int calculateTotalPages(
+            final int itemCount,
+            final int pageSize
+    ) {
+        return Math.max(
+                1,
+                (itemCount + pageSize - 1) / pageSize
+        );
+    }
+
+    /**
+     * ページ番号を有効範囲へ補正する。
+     *
+     * @param page       指定ページ
+     * @param totalPages 総ページ数
+     * @return 補正後ページ
+     */
+    private int normalizePage(
+            final int page,
+            final int totalPages
+    ) {
+        return Math.clamp(page, 0, totalPages - 1);
+    }
+
+    /**
+     * 前ページボタンのスロットを取得する。
+     *
+     * @param inventorySize GUIサイズ
+     * @return スロット番号
+     */
+    public int getPreviousPageSlot(final int inventorySize) {
+        return inventorySize - NAVIGATION_ROW_SIZE + PREVIOUS_PAGE_OFFSET;
+    }
+
+    /**
+     * ページ情報のスロットを取得する。
+     *
+     * @param inventorySize GUIサイズ
+     * @return スロット番号
+     */
+    private int getPageIndicatorSlot(final int inventorySize) {
+        return inventorySize
+                - NAVIGATION_ROW_SIZE
+                + PAGE_INDICATOR_OFFSET;
+    }
+
+    /**
+     * 次ページボタンのスロットを取得する。
+     *
+     * @param inventorySize GUIサイズ
+     * @return スロット番号
+     */
+    public int getNextPageSlot(final int inventorySize) {
+        return inventorySize
+                - NAVIGATION_ROW_SIZE
+                + NEXT_PAGE_OFFSET;
     }
 
 }

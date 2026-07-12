@@ -3,6 +3,9 @@ package com.example.rpg.menu.holder;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * SHOP商品一覧画面を識別するためのInventoryHolder。
@@ -19,12 +22,31 @@ public class ItemMenuHolder implements InventoryHolder {
     private final String categoryId;
 
     /**
-     * コンストラクタ。
-     *
-     * @param categoryId 表示対象カテゴリID
+     * 表示中ページ番号。
      */
-    public ItemMenuHolder(String categoryId) {
+    private final int page;
+
+    /**
+     * 現在のページへ表示している商品ID。
+     *
+     * <p>リストのインデックスとGUIスロットを対応させる。</p>
+     */
+    private final List<String> displayedItemIds;
+
+    /**
+     * ItemMenuHolderを生成する。
+     *
+     * @param categoryId       表示対象カテゴリID
+     * @param page             表示ページ番号
+     * @param displayedItemIds 表示中の商品ID
+     */
+    public ItemMenuHolder(
+            final String categoryId,
+            final int page,
+            final List<String> displayedItemIds) {
         this.categoryId = categoryId;
+        this.page = page;
+        this.displayedItemIds = displayedItemIds;
     }
 
     /**
@@ -37,14 +59,39 @@ public class ItemMenuHolder implements InventoryHolder {
     }
 
     /**
-     * このHolderは画面識別用であり、Inventory実体の保持は不要なため、
-     * このメソッドが呼ばれた場合は例外を投げる
+     * 表示中ページ番号を取得する。
+     *
+     * @return ページ番号
+     */
+    public int getPage() {
+        return page;
+    }
+
+    /**
+     * クリックされたスロットに対応する商品IDを取得する。
+     *
+     * @param slot クリックされたスロット
+     * @return 商品ID。商品スロットでない場合はnull
+     */
+    public @Nullable String findItemIdBySlot(final int slot) {
+        if (slot < 0 || slot >= displayedItemIds.size()) {
+            return null;
+        }
+
+        return displayedItemIds.get(slot);
+    }
+
+
+    /**
+     * このHolderは画面識別用であり、Inventory実体は保持しない。
      *
      * @return この実装では返却しない
-     * @throws UnsupportedOperationException 実行できない操作を行った
+     * @throws UnsupportedOperationException 常に発生
      */
     @Override
     public @NotNull Inventory getInventory() {
-        throw new UnsupportedOperationException("ItemMenuHolder does not store inventory instance.");
+        throw new UnsupportedOperationException(
+                "ItemMenuHolder does not store inventory instance."
+        );
     }
 }

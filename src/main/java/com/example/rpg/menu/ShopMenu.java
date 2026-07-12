@@ -80,7 +80,7 @@ public class ShopMenu {
         final int inventorySize = normalizeInventorySize(shop.getSize());
 
         final Inventory inventory = Bukkit.createInventory(
-                new CategoryMenuHolder(), shop.getSize(), MessageUtil.mm(shop.getTitle()));
+                new CategoryMenuHolder(), inventorySize, MessageUtil.mm(shop.getTitle()));
 
         fillDecoration(inventory);
         placeCategoryIcons(inventory);
@@ -101,7 +101,7 @@ public class ShopMenu {
 
         Inventory inventory = Bukkit.createInventory(
                 new ItemMenuHolder(category.getId()),
-                shop.getSize(),
+                inventorySize,
                 createItemMenuTitle(shop, category)
         );
 
@@ -117,7 +117,7 @@ public class ShopMenu {
      */
     private void placeCategoryIcons(final Inventory inventory) {
         for (ShopCategoryDto category : shopRepository.findCategories()) {
-            if (!isValidSlot(inventory, category.getSlot())) {
+            if (isInvalidSlot(inventory, category.getSlot())) {
                 continue;
             }
 
@@ -186,7 +186,7 @@ public class ShopMenu {
                 continue;
             }
 
-            if (!isValidSlot(inventory, item.getSlot())) {
+            if (isInvalidSlot(inventory, item.getSlot())) {
                 continue;
             }
 
@@ -296,17 +296,17 @@ public class ShopMenu {
     }
 
     /**
-     * スロット番号がInventoryの範囲内(0 ~ inventory size)か判定する。
+     * スロット番号がInventoryの範囲外(0未満 または inventory size以上)か判定する。
      *
      * @param inventory 対象Inventory
      * @param slot      スロット番号
      * @return 有効な場合true
      */
-    private boolean isValidSlot(
+    private boolean isInvalidSlot(
             final Inventory inventory,
             final int slot
     ) {
-        return slot >= 0 && slot < inventory.getSize();
+        return slot < 0 || slot >= inventory.getSize();
     }
 
     /**

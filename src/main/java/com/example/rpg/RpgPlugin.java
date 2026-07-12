@@ -1,12 +1,13 @@
 package com.example.rpg;
 
 import com.example.rpg.command.*;
-import com.example.rpg.facade.ShopGuiFacade;
+import com.example.rpg.facade.ShopFacade;
 import com.example.rpg.listener.BlockBreakListener;
 import com.example.rpg.listener.EntityKillListener;
 import com.example.rpg.listener.ServerPingListener;
 import com.example.rpg.listener.ShopListener;
 import com.example.rpg.menu.ShopMenu;
+import com.example.rpg.menu.pdc.ShopPdcKeys;
 import com.example.rpg.repository.MoneyRepository;
 import com.example.rpg.repository.ShopPurchaseRepository;
 import com.example.rpg.repository.ShopRepository;
@@ -52,7 +53,12 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     /**
      * ShopFacade
      */
-    private ShopGuiFacade shopGuiFacade;
+    private ShopFacade shopFacade;
+
+    /**
+     * SHOP GUI用PDCキー。
+     */
+    private ShopPdcKeys shopPdcKeys;
 
     /**
      * プラグイン有効化時の初期化処理。
@@ -119,21 +125,23 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * GUIを生成します。
      */
     private void initializeMenus() {
+        this.shopPdcKeys = new ShopPdcKeys(this);
 
         this.shopMenu = new ShopMenu(
-                shopRepository
+                shopRepository,
+                shopPdcKeys
         );
     }
 
     /**
-     * Facadeを生成します。
+     * Facadeを生成する。
      */
     private void initializeFacades() {
-
-        this.shopGuiFacade = new ShopGuiFacade(
+        this.shopFacade = new ShopFacade(
                 shopRepository,
                 shopMenu,
-                shopService
+                shopService,
+                shopPdcKeys
         );
     }
 
@@ -142,7 +150,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      *
      */
     private void registerCommands() {
-        ShopCommand shopCommand = new ShopCommand(shopGuiFacade, shopService);
+        ShopCommand shopCommand = new ShopCommand(shopFacade, shopService);
         Objects.requireNonNull(getCommand("shop")).setExecutor(shopCommand);
         Objects.requireNonNull(getCommand("shop")).setTabCompleter(shopCommand);
 
@@ -172,7 +180,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new ServerPingListener(), this);
         getServer().getPluginManager().registerEvents(new BlockBreakListener(), this);
-        getServer().getPluginManager().registerEvents(new ShopListener(shopGuiFacade), this);
+        getServer().getPluginManager().registerEvents(new ShopListener(shopFacade), this);
         getServer().getPluginManager().registerEvents(new EntityKillListener(moneyRepository, expService), this);
     }
 

@@ -1,6 +1,6 @@
 package com.example.rpg.command;
 
-import com.example.rpg.facade.ShopGuiFacade;
+import com.example.rpg.facade.ShopFacade;
 import com.example.rpg.service.ShopService;
 import com.example.rpg.util.MessageUtil;
 import com.example.rpg.util.RpgUtil;
@@ -27,7 +27,7 @@ public class ShopCommand implements CommandExecutor, TabCompleter {
     /**
      * SHOP GUI FACADE
      */
-    private final ShopGuiFacade shopGuiFacade;
+    private final ShopFacade shopFacade;
     /**
      * SHOP業務処理クラス
      */
@@ -36,11 +36,11 @@ public class ShopCommand implements CommandExecutor, TabCompleter {
     /**
      * SHOPコマンドを生成する。
      *
-     * @param shopGuiFacade SHOP GUI Facade
-     * @param shopService   SHOP業務処理クラス
+     * @param shopFacade  SHOP GUI Facade
+     * @param shopService SHOP業務処理クラス
      */
-    public ShopCommand(ShopGuiFacade shopGuiFacade, ShopService shopService) {
-        this.shopGuiFacade = shopGuiFacade;
+    public ShopCommand(ShopFacade shopFacade, ShopService shopService) {
+        this.shopFacade = shopFacade;
         this.shopService = shopService;
     }
 
@@ -61,7 +61,7 @@ public class ShopCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 0) {
-            shopGuiFacade.openCategory(player);
+            shopFacade.openCategory(player);
             return true;
         }
 

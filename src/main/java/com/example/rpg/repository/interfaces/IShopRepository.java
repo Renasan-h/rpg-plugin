@@ -61,17 +61,6 @@ public interface IShopRepository {
     ShopCategoryDto findShopCategoryById(String categoryId);
 
     /**
-     * 表示スロットからSHOPカテゴリを取得する。
-     *
-     * <p>GUI上の配置とカテゴリ定義の対応はRepositoryが把握する。
-     * Facadeは「探し方」ではなく「見つかった後の画面遷移」に集中させる。</p>
-     *
-     * @param slot GUIスロット番号
-     * @return カテゴリ。存在しない場合はnull
-     */
-    ShopCategoryDto findShopCategoryBySlot(int slot);
-
-    /**
      * 指定カテゴリの商品一覧を取得する。
      *
      * @param categoryId カテゴリID
@@ -89,17 +78,6 @@ public interface IShopRepository {
      * @return SHOP商品リスト。
      */
     ShopItemDto findShopItemById(String itemId);
-
-    /**
-     * カテゴリIDと表示スロットからSHOP商品を取得する。
-     *
-     * <p>商品探索処理をRepositoryに集約し、FacadeがDTOのMap構造へ依存しないようにする。</p>
-     *
-     * @param categoryId カテゴリID
-     * @param slot       GUIスロット番号
-     * @return 商品。存在しない場合はnull
-     */
-    ShopItemDto findShopItemBySlot(String categoryId, int slot);
 
     /**
      * Materialから売却可能なSHOP商品を取得する。

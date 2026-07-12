@@ -191,18 +191,6 @@ public class ShopRepository implements IShopRepository {
     /**
      * {@inheritDoc}
      */
-    public ShopCategoryDto findShopCategoryBySlot(int slot) {
-        return shopDto.getCategories()
-                .values()
-                .stream()
-                .filter(category -> category.getSlot() == slot)
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public List<ShopItemDto> findShopItems(String categoryId) {
         ShopCategoryDto category = findShopCategoryById(categoryId);
 
@@ -233,25 +221,7 @@ public class ShopRepository implements IShopRepository {
         }
         return null;
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    public ShopItemDto findShopItemBySlot(String categoryId, int slot) {
-        ShopCategoryDto category = findShopCategoryById(categoryId);
-
-        if (category == null) {
-            return null;
-        }
-
-        return category.getItems()
-                .values()
-                .stream()
-                .filter(item -> item.getSlot() == slot)
-                .findFirst()
-                .orElse(null);
-    }
-
+    
     /**
      * {@inheritDoc}
      */

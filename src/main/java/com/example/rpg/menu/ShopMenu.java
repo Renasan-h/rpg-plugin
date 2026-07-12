@@ -5,6 +5,7 @@ import com.example.rpg.dto.ShopDto;
 import com.example.rpg.dto.ShopItemDto;
 import com.example.rpg.menu.holder.CategoryMenuHolder;
 import com.example.rpg.menu.holder.ItemMenuHolder;
+import com.example.rpg.menu.pdc.ShopPdcKeys;
 import com.example.rpg.repository.interfaces.IShopRepository;
 import com.example.rpg.util.MessageUtil;
 import net.kyori.adventure.text.Component;
@@ -15,6 +16,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,12 +81,20 @@ public class ShopMenu {
     private final IShopRepository shopRepository;
 
     /**
+     * SHOP GUIで使用するPDCキー。
+     */
+    private final ShopPdcKeys pdcKeys;
+
+    /**
      * コンストラクタ。
      *
      * @param shopRepository SHOP設定Repository
      */
-    public ShopMenu(IShopRepository shopRepository) {
+    public ShopMenu(
+            final IShopRepository shopRepository,
+            final ShopPdcKeys pdcKeys) {
         this.shopRepository = shopRepository;
+        this.pdcKeys = pdcKeys;
     }
 
     /**
@@ -138,8 +149,7 @@ public class ShopMenu {
 
         final ItemMenuHolder holder = new ItemMenuHolder(
                 category.getId(),
-                normalizedPage,
-                pageItems.stream().map(ShopItemDto::getId).toList()
+                normalizedPage
         );
 
 
@@ -155,9 +165,14 @@ public class ShopMenu {
         );
 
         fillDecoration(inventory);
-        placeShopItems(inventory, player, category);
+        placePageItems(
+                inventory,
+                pageItems,
+                category.getId()
+        );
         placeNavigationItems(
                 inventory,
+                category.getId(),
                 normalizedPage,
                 totalPages
         );
@@ -201,6 +216,15 @@ public class ShopMenu {
         // 攻撃力や防具値などの標準属性を表示しない。
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
+        final PersistentDataContainer pdc =
+                meta.getPersistentDataContainer();
+        // 表示スロットではなく、カテゴリIDで遷移先を判定するため、
+        // GUIアイコン自身へカテゴリIDを保持する。
+        pdc.set(pdcKeys.getShopCategoryKey(),
+                PersistentDataType.STRING,
+                category.getId()
+        );
+
         icon.setItemMeta(meta);
         return icon;
     }
@@ -225,31 +249,6 @@ public class ShopMenu {
     }
 
     /**
-     * 商品アイコンをGUIへ配置する。
-     *
-     * @param inventory 配置対象Inventory
-     * @param player    表示対象プレイヤー
-     * @param category  表示対象カテゴリ
-     */
-    private void placeShopItems(
-            final Inventory inventory,
-            final Player player,
-            final ShopCategoryDto category
-    ) {
-        for (ShopItemDto item : shopRepository.findShopItems(category.getId())) {
-            if (!canDisplayItem(player, item)) {
-                continue;
-            }
-
-            if (isInvalidSlot(inventory, item.getSlot())) {
-                continue;
-            }
-
-            inventory.setItem(item.getSlot(), createShopItem(item));
-        }
-    }
-
-    /**
      * 商品をプレイヤーへ表示できるか権限判定を行う。
      *
      * @param player 表示対象プレイヤー
@@ -267,10 +266,14 @@ public class ShopMenu {
     /**
      * 商品アイコンを生成する。
      *
-     * @param item 商品定義
+     * @param item       商品定義
+     * @param categoryId 商品が所属するカテゴリID
      * @return 商品アイコン
      */
-    private ItemStack createShopItem(final ShopItemDto item) {
+    private ItemStack createShopItem(
+            final ShopItemDto item,
+            final String categoryId
+    ) {
         final ItemStack itemStack = new ItemStack(item.getMaterial(), item.getAmount());
         final ItemMeta meta = itemStack.getItemMeta();
 
@@ -279,7 +282,23 @@ public class ShopMenu {
         // SHOP商品はRPG専用Loreで性能を表現するため、
         // Minecraft標準の攻撃力や追加Tooltipを表示しない。
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        meta.setHideTooltip(false);
+
+        final PersistentDataContainer pdc =
+                meta.getPersistentDataContainer();
+
+        pdc.set(
+                pdcKeys.getShopCategoryKey(),
+                PersistentDataType.STRING,
+                categoryId
+        );
+
+        // 商品配置スロットが変更されても購入対象を特定できるよう、
+        // 商品IDをGUIアイテム自身へ保存する。
+        pdc.set(
+                pdcKeys.getShopItemKey(),
+                PersistentDataType.STRING,
+                item.getId()
+        );
 
         itemStack.setItemMeta(meta);
         return itemStack;
@@ -323,7 +342,6 @@ public class ShopMenu {
         return MessageUtil.mm(
                 shop.getTitle()
                         + ITEM_TITLE_SEPARATOR
-                        + category.getName()
                         + category.getName()
                         + " <gray>("
                         + (currentPage + 1)
@@ -446,14 +464,23 @@ public class ShopMenu {
         return List.copyOf(items.subList(fromIndex, toIndex));
     }
 
+    /**
+     * 現在ページの商品をGUIへ配置する。
+     *
+     * @param inventory  配置対象Inventory
+     * @param pageItems  現在ページの商品
+     * @param categoryId 表示中カテゴリID
+     */
     private void placePageItems(
             final Inventory inventory,
-            final List<ShopItemDto> pageItems
+            final List<ShopItemDto> pageItems,
+            final String categoryId
     ) {
         IntStream.range(0, pageItems.size())
                 .forEach(slot -> inventory.setItem(
                         slot,
-                        createShopItem(pageItems.get(slot))
+                        createShopItem(pageItems.get(slot),
+                                categoryId)
                 ));
     }
 
@@ -461,11 +488,13 @@ public class ShopMenu {
      * ページ操作アイテムを配置する。
      *
      * @param inventory   配置対象Inventory
+     * @param categoryId  表示中カテゴリID
      * @param currentPage 現在ページ
      * @param totalPages  総ページ数
      */
     private void placeNavigationItems(
             final Inventory inventory,
+            final String categoryId,
             final int currentPage,
             final int totalPages
     ) {
@@ -477,40 +506,28 @@ public class ShopMenu {
         if (currentPage > 0) {
             inventory.setItem(
                     getPreviousPageSlot(inventory.getSize()),
-                    createPreviousPageButton()
+                    createNavigationItem(
+                            Material.ARROW,
+                            "<yellow>前のページ</yellow>",
+                            categoryId,
+                            currentPage - 1,
+                            ShopMenuAction.PREVIOUS_PAGE
+                    )
             );
         }
 
         if (currentPage + 1 < totalPages) {
             inventory.setItem(
                     getNextPageSlot(inventory.getSize()),
-                    createNextPageButton()
+                    createNavigationItem(
+                            Material.ARROW,
+                            "<yellow>次のページ</yellow>",
+                            categoryId,
+                            currentPage + 1,
+                            ShopMenuAction.NEXT_PAGE
+                    )
             );
         }
-    }
-
-    /**
-     * 前ページボタンを生成する。
-     *
-     * @return 前ページボタン
-     */
-    private ItemStack createPreviousPageButton() {
-        return createNavigationItem(
-                Material.ARROW,
-                "<yellow>前のページ</yellow>"
-        );
-    }
-
-    /**
-     * 次ページボタンを生成する。
-     *
-     * @return 次ページボタン
-     */
-    private ItemStack createNextPageButton() {
-        return createNavigationItem(
-                Material.ARROW,
-                "<yellow>次のページ</yellow>"
-        );
     }
 
     /**
@@ -524,20 +541,30 @@ public class ShopMenu {
             final int currentPage,
             final int totalPages
     ) {
-        return createNavigationItem(
+        final String name = "<gold>"
+                + (currentPage + 1)
+                + " / "
+                + totalPages
+                + " ページ</gold>";
+
+        return createDisplayItem(
                 Material.PAPER,
-                "<gold>" + (currentPage + 1) + " / " + totalPages + " ページ</gold>"
+                name
         );
     }
 
     /**
-     * ページ操作アイテムを生成する。
+     * 表示専用のGUIアイテムを生成する。
      *
-     * @param material アイテムのMaterial
+     * <p>
+     * ページ表示など、クリック時に処理を行わないアイテムに使用する。
+     * </p>
+     *
+     * @param material 表示Material
      * @param name     表示名
-     * @return ページ操作アイテム
+     * @return 表示専用アイテム
      */
-    private ItemStack createNavigationItem(
+    private ItemStack createDisplayItem(
             final Material material,
             final String name
     ) {
@@ -545,7 +572,53 @@ public class ShopMenu {
         final ItemMeta meta = itemStack.getItemMeta();
 
         meta.displayName(MessageUtil.mm(name));
-        meta.setHideTooltip(false);
+
+        itemStack.setItemMeta(meta);
+        return itemStack;
+    }
+
+    /**
+     * ページ操作アイテムを生成する。
+     *
+     * @param material   表示Material
+     * @param name       表示名
+     * @param categoryId 表示中カテゴリID
+     * @param targetPage 遷移先ページ
+     * @param action     実行アクション
+     * @return ページ操作アイテム
+     */
+    private ItemStack createNavigationItem(
+            final Material material,
+            final String name,
+            final String categoryId,
+            final int targetPage,
+            final ShopMenuAction action
+    ) {
+        final ItemStack itemStack = new ItemStack(material);
+        final ItemMeta meta = itemStack.getItemMeta();
+
+        meta.displayName(MessageUtil.mm(name));
+
+        final PersistentDataContainer pdc =
+                meta.getPersistentDataContainer();
+
+        pdc.set(
+                pdcKeys.getShopCategoryKey(),
+                PersistentDataType.STRING,
+                categoryId
+        );
+
+        pdc.set(
+                pdcKeys.getPageKey(),
+                PersistentDataType.INTEGER,
+                targetPage
+        );
+
+        pdc.set(
+                pdcKeys.getActionKey(),
+                PersistentDataType.STRING,
+                action.name()
+        );
 
         itemStack.setItemMeta(meta);
         return itemStack;

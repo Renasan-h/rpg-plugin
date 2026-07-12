@@ -3,6 +3,7 @@ package com.example.rpg.command;
 import com.example.rpg.facade.ShopGuiFacade;
 import com.example.rpg.service.ShopService;
 import com.example.rpg.util.MessageUtil;
+import com.example.rpg.util.RpgUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -58,12 +59,17 @@ public class ShopCommand implements CommandExecutor {
             return true;
         }
 
+        // 手に持っているアイテムを指定個数販売する
         if (args[0].equalsIgnoreCase("sell")) {
+            if (args.length == 2) {
+                int amount = RpgUtil.getIntOrDefault(args[1], 1);
+                shopService.sellHandItem(player, amount);
+            }
             shopService.sellHandItem(player);
             return true;
         }
 
-        player.sendMessage(MessageUtil.yellow("使用方法： /shop または /shop sell"));
+        player.sendMessage(MessageUtil.yellow("使用方法： /shop または /shop sell amount"));
         return false;
     }
 }

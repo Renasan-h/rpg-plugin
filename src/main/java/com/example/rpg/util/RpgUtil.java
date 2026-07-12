@@ -29,4 +29,14 @@ public class RpgUtil {
 
         return value;
     }
+
+    public static int getIntOrDefault(String val, int def) {
+        int value;
+        try {
+            value = Integer.parseInt(val);
+        } catch (NumberFormatException e) {
+            value = 0;
+        }
+        return value;
+    }
 }

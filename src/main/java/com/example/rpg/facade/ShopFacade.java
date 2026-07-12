@@ -64,6 +64,11 @@ public class ShopFacade {
         this.pdcKeys = pdcKeys;
     }
 
+    /**
+     * SHOPカテゴリ一覧画面を表示する。
+     *
+     * @param player 表示対象プレイヤー
+     */
     public void openCategory(Player player) {
         shopMenu.openShopCategory(player);
     }

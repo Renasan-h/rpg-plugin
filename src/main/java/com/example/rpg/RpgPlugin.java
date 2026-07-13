@@ -2,6 +2,10 @@ package com.example.rpg;
 
 import com.example.rpg.command.*;
 import com.example.rpg.facade.ShopFacade;
+import com.example.rpg.item.ItemBuilder;
+import com.example.rpg.item.pdc.ItemPdcKeys;
+import com.example.rpg.item.repository.YamlItemRepository;
+import com.example.rpg.item.repository.interfaces.IItemRepository;
 import com.example.rpg.listener.BlockBreakListener;
 import com.example.rpg.listener.EntityKillListener;
 import com.example.rpg.listener.ServerPingListener;
@@ -11,6 +15,9 @@ import com.example.rpg.menu.pdc.ShopPdcKeys;
 import com.example.rpg.repository.MoneyRepository;
 import com.example.rpg.repository.ShopPurchaseRepository;
 import com.example.rpg.repository.ShopRepository;
+import com.example.rpg.repository.interfaces.IMoneyRepository;
+import com.example.rpg.repository.interfaces.IShopPurchaseRepository;
+import com.example.rpg.repository.interfaces.IShopRepository;
 import com.example.rpg.service.ExpService;
 import com.example.rpg.service.ShopService;
 import com.example.rpg.util.MessageUtil;
@@ -32,15 +39,28 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     /**
      * ShopRepository
      */
-    private ShopRepository shopRepository;
+    private IShopRepository shopRepository;
     /**
      * 所持金Repository
      */
-    private MoneyRepository moneyRepository;
+    private IMoneyRepository moneyRepository;
     /**
      * 購入履歴Repository
      */
-    private ShopPurchaseRepository shopPurchaseRepository;
+    private IShopPurchaseRepository shopPurchaseRepository;
+    /**
+     * RPGアイテム定義Repository。
+     */
+    private IItemRepository itemRepository;
+    /**
+     * RPGアイテム用PDCキー。
+     */
+    private ItemPdcKeys itemPdcKeys;
+
+    /**
+     * RPGアイテム生成Builder。
+     */
+    private ItemBuilder itemBuilder;
     /**
      * ShopService
      */
@@ -70,6 +90,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         // 初期化フェーズ
         initializeRepositories();
         initializeServices();
+        initializeBuilders();
         initializeMenus();
         initializeFacades();
 
@@ -106,6 +127,9 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 this, new File(getDataFolder(), "money.yml"));
         this.shopPurchaseRepository = new ShopPurchaseRepository(
                 this, new File(getDataFolder(), "shop-purchases.yml"));
+        this.itemRepository = new YamlItemRepository(
+                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "items.yml"))
+        );
     }
 
     /**
@@ -118,6 +142,18 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 shopRepository,
                 moneyRepository,
                 shopPurchaseRepository
+        );
+    }
+
+    /**
+     * Builderを生成する。
+     */
+    private void initializeBuilders() {
+        this.itemPdcKeys = new ItemPdcKeys(this);
+
+        this.itemBuilder = new ItemBuilder(
+                itemRepository,
+                itemPdcKeys
         );
     }
 
@@ -246,6 +282,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         copyResourceIfAbsent("money.yml");
         copyResourceIfAbsent("shop-purchases.yml");
         copyResourceIfAbsent("shop.yml");
+        copyResourceIfAbsent("items.yml");
     }
 
 }

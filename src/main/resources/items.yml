@@ -1,0 +1,18 @@
+items:
+  iron_sword:
+    material: IRON_SWORD
+    displayName: "<white>鉄の剣</white>"
+    lore:
+      - "<gray>一般的な鉄製の剣</gray>"
+
+  bread:
+    material: BREAD
+    displayName: "<white>パン</white>"
+    lore:
+      - "<gray>空腹を満たす食料</gray>"
+
+  shield:
+    material: SHIELD
+    displayName: "<white>盾</white>"
+    lore:
+      - "<gray>攻撃から身を守る盾</gray>"

@@ -34,14 +34,6 @@ public class ShopItemDto {
      */
     private final String name;
     /**
-     * 表示時のカラー
-     */
-    private final String dispColor;
-    /**
-     * 表示用ラベル
-     */
-    private final String dispLabel;
-    /**
      * 買値
      */
     private final int price;
@@ -69,10 +61,6 @@ public class ShopItemDto {
      * アイテムの特殊コマンド
      */
     private final List<String> commands;
-    /**
-     * 表示名
-     */
-    private final String displayName;
 
     /**
      *
@@ -82,8 +70,6 @@ public class ShopItemDto {
      * @param type       タイプ
      * @param material   材質
      * @param name       名前
-     * @param dispColor  色
-     * @param dispLabel  ラベル
      * @param price      買値
      * @param sellPrice  売値
      * @param amount     購入個数
@@ -99,8 +85,6 @@ public class ShopItemDto {
             ShopItemType type,
             Material material,
             String name,
-            String dispColor,
-            String dispLabel,
             int price,
             int sellPrice,
             int amount,
@@ -115,8 +99,6 @@ public class ShopItemDto {
         this.type = type;
         this.material = material;
         this.name = name;
-        this.dispColor = dispColor;
-        this.dispLabel = dispLabel;
         this.price = price;
         this.sellPrice = sellPrice;
         this.amount = amount;
@@ -124,7 +106,6 @@ public class ShopItemDto {
         this.permission = permission;
         this.lore = lore;
         this.commands = commands;
-        this.displayName = this.dispLabel.replaceAll("#dispColor#", this.dispColor).replaceAll("name", this.name);
     }
 
     public String getId() {
@@ -149,14 +130,6 @@ public class ShopItemDto {
 
     public String getName() {
         return name;
-    }
-
-    public String getDispColor() {
-        return dispColor;
-    }
-
-    public String getDispLabel() {
-        return dispLabel;
     }
 
     public int getPrice() {
@@ -185,10 +158,6 @@ public class ShopItemDto {
 
     public List<String> getCommands() {
         return commands;
-    }
-
-    public String getDisplayName() {
-        return displayName;
     }
 
     public boolean isCommandItem() {

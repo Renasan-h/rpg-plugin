@@ -142,8 +142,6 @@ public class ShopRepository implements IShopRepository {
 
         String name = section.getString("name", id);
         String itemId = section.getString("itemId", id);
-        String color = section.getString("dispColor", "white");
-        String label = section.getString("dispLabel", "<#dispColor#>#name#</#dispColor#>");
         int price = section.getInt("price", 0);
         // 売却額の指定がない場合は1/3の価格で設定する
         int sellPrice = RpgUtil.getIntOrDefault(section, "sellPrice", price == 0 ? 0 : Math.round((float) price / 3));
@@ -164,8 +162,6 @@ public class ShopRepository implements IShopRepository {
                 type,
                 material,
                 name,
-                color,
-                label,
                 price,
                 sellPrice,
                 amount,

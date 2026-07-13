@@ -14,8 +14,6 @@ shop:
           slot: 10
           material: IRON_SWORD
           name: "鉄の剣"
-          dispColor: "white"
-          dispLabel: "<#dispColor#>#name#</#dispColor#>"
           price: 100
           sellPrice: 30
           amount: 1
@@ -30,8 +28,6 @@ shop:
           type: ITEM
           material: DIAMOND_SWORD
           name: "VIP専用剣"
-          dispColor: "aqua"
-          dispLabel: "<#dispColor#>#name#</#dispColor#>"
           price: 10000
           amount: 1
           permission: "rpg.shop.vip"
@@ -48,8 +44,6 @@ shop:
           slot: 14
           material: SHIELD
           name: "盾"
-          dispColor: "white"
-          dispLabel: "<#dispColor#>#name#</#dispColor#>"
           price: 80
           amount: 1
           lore:
@@ -64,8 +58,6 @@ shop:
           slot: 12
           material: BREAD
           name: "パン"
-          dispColor: "white"
-          dispLabel: "<#dispColor#>#name#</#dispColor#>"
           price: 10
           sellPrice: 3
           amount: 5
@@ -83,8 +75,6 @@ shop:
           slot: 16
           material: POTION
           name: "回復ポーション"
-          dispColor: "light_purple"
-          dispLabel: "<#dispColor#>#name#</#dispColor#>"
           price: 50
           amount: 1
           lore:
@@ -101,8 +91,6 @@ shop:
           type: COMMAND
           material: PAPER
           name: "回復券"
-          dispColor: "green"
-          dispLabel: "<#dispColor#>#name#</#dispColor#>"
           price: 250
           amount: 1
           lore:
@@ -118,8 +106,6 @@ shop:
           type: COMMAND
           material: CHEST
           name: "初心者セット"
-          dispColor: "green"
-          dispLabel: "<#dispColor#>#name#</#dispColor#>"
           price: 0
           amount: 1
           limit: 1

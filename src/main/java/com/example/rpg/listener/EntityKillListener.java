@@ -1,8 +1,8 @@
 package com.example.rpg.listener;
 
+import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.repository.interfaces.IMoneyRepository;
 import com.example.rpg.service.ExpService;
-import com.example.rpg.util.MessageUtil;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

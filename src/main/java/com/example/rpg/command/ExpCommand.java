@@ -1,7 +1,7 @@
 package com.example.rpg.command;
 
+import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.service.ExpService;
-import com.example.rpg.util.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

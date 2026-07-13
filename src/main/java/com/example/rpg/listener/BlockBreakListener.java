@@ -1,6 +1,6 @@
 package com.example.rpg.listener;
 
-import com.example.rpg.util.MessageUtil;
+import com.example.rpg.common.message.MessageUtil;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

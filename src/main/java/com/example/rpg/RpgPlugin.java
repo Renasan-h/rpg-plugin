@@ -1,6 +1,7 @@
 package com.example.rpg;
 
 import com.example.rpg.command.*;
+import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.item.ItemBuilder;
 import com.example.rpg.item.pdc.ItemPdcKeys;
 import com.example.rpg.item.repository.YamlItemRepository;
@@ -22,7 +23,6 @@ import com.example.rpg.shop.repository.ShopRepository;
 import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.shop.service.ShopService;
-import com.example.rpg.util.MessageUtil;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

@@ -1,8 +1,8 @@
 package com.example.rpg.shop.command;
 
+import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.shop.facade.ShopFacade;
 import com.example.rpg.shop.service.ShopService;
-import com.example.rpg.util.MessageUtil;
 import com.example.rpg.util.RpgUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

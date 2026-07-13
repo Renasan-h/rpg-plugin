@@ -1,4 +1,4 @@
-package com.example.rpg.util;
+package com.example.rpg.common.message;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;

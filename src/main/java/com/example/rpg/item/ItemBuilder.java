@@ -1,9 +1,9 @@
 package com.example.rpg.item;
 
+import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.item.dto.ItemDto;
 import com.example.rpg.item.pdc.ItemPdcKeys;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
-import com.example.rpg.util.MessageUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;

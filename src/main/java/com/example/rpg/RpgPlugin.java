@@ -153,7 +153,6 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 shopRepository,
                 moneyRepository,
                 shopPurchaseRepository,
-                itemPdcKeys,
                 itemPdcService,
                 itemBuilder
         );

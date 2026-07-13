@@ -144,8 +144,12 @@ public class ShopRepository implements IShopRepository {
         String permission = section.getString("permission", "");
 
         // 値段:priceと売値:sellPriceを自身の値で書き換える
-        List<String> lore = section.getStringList("lore").stream()
-                .map(s -> s.replaceAll("#price#", Integer.toString(price)).replaceAll("#sellPrice#", Integer.toString(price))).toList();
+        List<String> lore = section.getStringList("lore")
+                .stream()
+                .map(line -> line
+                        .replace("#price#", Integer.toString(price))
+                        .replace("#sellPrice#", Integer.toString(price))
+                ).toList();
         List<String> commands = section.getStringList("commands");
 
         return new ShopItemDto(

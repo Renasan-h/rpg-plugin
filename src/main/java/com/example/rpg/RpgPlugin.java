@@ -34,7 +34,6 @@ import java.io.File;
 import java.util.Objects;
 
 public class RpgPlugin extends JavaPlugin implements Listener {
-
     /**
      * 経験値取得サービス
      */
@@ -154,7 +153,8 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 moneyRepository,
                 shopPurchaseRepository,
                 itemPdcService,
-                itemBuilder
+                itemBuilder,
+                itemRepository
         );
     }
 

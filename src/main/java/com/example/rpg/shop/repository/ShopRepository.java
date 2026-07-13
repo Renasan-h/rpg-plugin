@@ -133,7 +133,6 @@ public class ShopRepository implements IShopRepository {
         String typeText = section.getString("type", "ITEM");
         ShopItemType type = ShopItemType.valueOf(typeText.toUpperCase());
 
-        String name = section.getString("name", id);
         String itemId = section.getString("itemId", id);
         int price = section.getInt("price", 0);
         // 売却額の指定がない場合は1/3の価格で設定する
@@ -142,14 +141,6 @@ public class ShopRepository implements IShopRepository {
         int limit = RpgUtil.getIntOrDefault(section, "limit", -1);
 
         String permission = section.getString("permission", "");
-
-        // 値段:priceと売値:sellPriceを自身の値で書き換える
-        List<String> lore = section.getStringList("lore")
-                .stream()
-                .map(line -> line
-                        .replace("#price#", Integer.toString(price))
-                        .replace("#sellPrice#", Integer.toString(price))
-                ).toList();
         List<String> commands = section.getStringList("commands");
 
         return new ShopItemDto(
@@ -157,13 +148,11 @@ public class ShopRepository implements IShopRepository {
                 itemId,
                 slot,
                 type,
-                name,
                 price,
                 sellPrice,
                 amount,
                 limit,
                 permission,
-                lore,
                 commands
         );
     }

@@ -2,12 +2,15 @@ package com.example.rpg.shop.service;
 
 import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.item.ItemBuilder;
+import com.example.rpg.item.dto.ItemDto;
+import com.example.rpg.item.repository.interfaces.IItemRepository;
 import com.example.rpg.item.service.ItemPdcService;
 import com.example.rpg.repository.interfaces.IMoneyRepository;
 import com.example.rpg.shop.constants.ShopServiceConst;
 import com.example.rpg.shop.dto.ShopItemDto;
 import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -22,22 +25,27 @@ import org.bukkit.inventory.ItemStack;
  */
 public class ShopService {
     /**
-     * SHOP商品情報の取得元。
+     * RPGショップ商品情報Repository
      */
     private final IShopRepository shopRepository;
 
     /**
-     * 購入回数管理Service。
+     * ショップ購入回数管理Repository
      */
     private final IShopPurchaseRepository shopPurchaseRepository;
 
     /**
-     * 所持金管理Service。
+     * RPG所持金管理Repository
      */
     private final IMoneyRepository moneyRepository;
 
     /**
-     * ItemPdc操作Service
+     * RPGアイテム定義Repository。
+     */
+    private final IItemRepository itemRepository;
+
+    /**
+     * ItemPersistentDataContainer操作Service
      */
     private final ItemPdcService itemPdcService;
 
@@ -45,7 +53,6 @@ public class ShopService {
      * RPGアイテム生成Builder。
      */
     private final ItemBuilder itemBuilder;
-
 
     /**
      * ShopServiceを生成する。
@@ -55,19 +62,22 @@ public class ShopService {
      * @param shopPurchaseRepository 購入履歴Repository
      * @param itemPdcService         ItemPdc操作用サービス
      * @param itemBuilder            RPGアイテム生成Builder
+     * @param itemRepository         RPGアイテム定義Repository
      */
     public ShopService(
-            final IShopRepository shopRepository,
-            final IMoneyRepository moneyRepository,
-            final IShopPurchaseRepository shopPurchaseRepository,
-            final ItemPdcService itemPdcService,
-            final ItemBuilder itemBuilder
+        final IShopRepository shopRepository,
+        final IMoneyRepository moneyRepository,
+        final IShopPurchaseRepository shopPurchaseRepository,
+        final ItemPdcService itemPdcService,
+        final ItemBuilder itemBuilder,
+        final IItemRepository itemRepository
     ) {
         this.shopRepository = shopRepository;
         this.moneyRepository = moneyRepository;
         this.shopPurchaseRepository = shopPurchaseRepository;
         this.itemPdcService = itemPdcService;
         this.itemBuilder = itemBuilder;
+        this.itemRepository = itemRepository;
     }
 
     /**
@@ -127,8 +137,8 @@ public class ShopService {
         }
 
         int currentCount = shopPurchaseRepository.findPurchaseCount(
-                player.getUniqueId(),
-                shopItem.getId()
+            player.getUniqueId(),
+            shopItem.getId()
         );
 
         return currentCount >= shopItem.getLimit();
@@ -142,14 +152,14 @@ public class ShopService {
      */
     private void sendLimitReachedMessage(Player player, ShopItemDto shopItem) {
         int currentCount = shopPurchaseRepository.findPurchaseCount(
-                player.getUniqueId(),
-                shopItem.getId()
+            player.getUniqueId(),
+            shopItem.getId()
         );
 
         player.sendMessage(MessageUtil.red("この商品は購入上限に達しています。"));
         player.sendMessage(MessageUtil.mm(
-                "<gray>購入済み: </gray><yellow>" + currentCount + "</yellow>" +
-                        "<gray> / 上限: </gray><yellow>" + shopItem.getLimit() + "</yellow>"
+            "<gray>購入済み: </gray><yellow>" + currentCount + "</yellow>" +
+                "<gray> / 上限: </gray><yellow>" + shopItem.getLimit() + "</yellow>"
         ));
     }
 
@@ -175,8 +185,8 @@ public class ShopService {
 
         player.sendMessage(MessageUtil.red("所持金が足りません。"));
         player.sendMessage(MessageUtil.mm(
-                "<gray>必要: </gray><gold>" + shopItem.getPrice() + "G</gold>" +
-                        "<gray> / 現在: </gray><gold>" + currentMoney + "G</gold>"
+            "<gray>必要: </gray><gold>" + shopItem.getPrice() + "G</gold>" +
+                "<gray> / 現在: </gray><gold>" + currentMoney + "G</gold>"
         ));
     }
 
@@ -215,11 +225,14 @@ public class ShopService {
      * @param shopItem 購入対象商品
      */
     private void sendPurchaseCompletedMessage(Player player, ShopItemDto shopItem) {
-        player.sendMessage(MessageUtil.mm(
-                "<yellow>購入しました: </yellow>" + shopItem.getName() +
-                        " <gray>x" + shopItem.getAmount() + "</gray>" +
-                        " <gray>-" + shopItem.getPrice() + "G</gray>"
-        ));
+        player.sendMessage(
+            MessageUtil.mm("<yellow>購入しました: </yellow>")
+                .append(getItemDisplayName(shopItem))
+                .append(MessageUtil.mm(
+                    " <gray>x" + shopItem.getAmount() + "</gray>"))
+                .append(MessageUtil.mm(
+                    " <gray>-" + shopItem.getPrice() + "G</gray>"))
+        );
     }
 
     /**
@@ -358,17 +371,18 @@ public class ShopService {
      * @param price    売却金額
      */
     private void sendSellCompletedMessage(
-            final Player player,
-            final ShopItemDto shopItem,
-            final int amount,
-            final int price
+        final Player player,
+        final ShopItemDto shopItem,
+        final int amount,
+        final int price
     ) {
-        player.sendMessage(MessageUtil.mm(
-                "<yellow>売却しました: </yellow>"
-                        + shopItem.getName()
-                        + " <gray>x" + amount + "</gray>"
-                        + " <gold>+" + price + "G</gold>"
-        ));
+        player.sendMessage(
+            MessageUtil.mm("<yellow>売却しました: </yellow>")
+                .append(getItemDisplayName(shopItem)
+                    .append(MessageUtil.mm(" <gray>x" + amount + "</gray>"))
+                    .append(MessageUtil.mm(" <gold>+" + price + "G</gold>"))
+                )
+        );
     }
 
     /**
@@ -378,7 +392,7 @@ public class ShopService {
      */
     private void sendEmptyHandMessage(final Player player) {
         player.sendMessage(
-                MessageUtil.red("売却するアイテムを手に持ってください。")
+            MessageUtil.red("売却するアイテムを手に持ってください。")
         );
     }
 
@@ -390,9 +404,9 @@ public class ShopService {
     private void sendInsufficientItemAmountMessage(final Player player, int amount) {
         final int currentAmount = player.getInventory().getItemInMainHand().getAmount();
         player.sendMessage(MessageUtil.mm(
-                "<red>手持ちアイテムの個数が不足しています。</red>"
-                        + " <gray>指定: " + amount
-                        + " / 所持: " + currentAmount + "</gray>"
+            "<red>手持ちアイテムの個数が不足しています。</red>"
+                + " <gray>指定: " + amount
+                + " / 所持: " + currentAmount + "</gray>"
         ));
     }
 
@@ -403,7 +417,7 @@ public class ShopService {
      */
     private void sendCannotSellMessage(final Player player) {
         player.sendMessage(
-                MessageUtil.red("このアイテムは売却できません。")
+            MessageUtil.red("このアイテムは売却できません。")
         );
     }
 
@@ -418,9 +432,28 @@ public class ShopService {
             String parsedCommand = command.replace(ShopServiceConst.REP_COMMAND_PLAYER, player.getName());
 
             player.getServer().dispatchCommand(
-                    player.getServer().getConsoleSender(),
-                    parsedCommand
+                player.getServer().getConsoleSender(),
+                parsedCommand
             );
         }
+    }
+
+    /**
+     * SHOP商品のRPGアイテム表示名を取得する。
+     *
+     * @param shopItem SHOP商品定義
+     * @return MiniMessageから変換した表示名
+     * @throws IllegalStateException アイテム定義が存在しない場合
+     */
+    private Component getItemDisplayName(final ShopItemDto shopItem) {
+        final ItemDto item = itemRepository.findById(shopItem.getItemId());
+
+        if (item == null) {
+            throw new IllegalArgumentException(
+                "Item definition not found: " + shopItem.getItemId()
+            );
+        }
+
+        return MessageUtil.mm(item.getDisplayName());
     }
 }

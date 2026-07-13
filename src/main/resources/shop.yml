@@ -12,26 +12,17 @@ shop:
         iron_sword:
           itemId: iron_sword
           slot: 10
-          name: "鉄の剣"
           price: 100
           sellPrice: 30
           amount: 1
-          lore:
-            - "<yellow>価格: #price#G</yellow>"
-            - "<gray>売却: #sellPrice#G</gray>"
-            - "<gray>序盤用の武器</gray>"
 
         vip_sword:
           itemId: diamond_sword
           slot: 22
           type: ITEM
-          name: "VIP専用剣"
           price: 10000
           amount: 1
           permission: "rpg.shop.vip"
-          lore:
-            - "<yellow>価格: #price#G</yellow>"
-            - "<aqua>VIP専用商品</aqua>"
     defense:
       slot: 12
       icon: SHIELD
@@ -40,11 +31,8 @@ shop:
         shield:
           itemId: shield
           slot: 14
-          name: "盾"
           price: 80
           amount: 1
-          lore:
-            - "<yellow>価格: #price#G</yellow>"
     food:
       slot: 14
       icon: BREAD
@@ -53,13 +41,9 @@ shop:
         bread:
           itemId: bread
           slot: 12
-          name: "パン"
           price: 10
           sellPrice: 3
           amount: 5
-          lore:
-            - "<yellow>価格: #price#G</yellow>"
-            - "<gray>売却: #sellPrice#G</gray>"
 
     potion:
       slot: 16
@@ -69,11 +53,8 @@ shop:
         potion:
           itemId: potion
           slot: 16
-          name: "回復ポーション"
           price: 50
           amount: 1
-          lore:
-            - "<yellow>価格: #price#G</yellow>"
 
     special:
       slot: 28
@@ -84,12 +65,8 @@ shop:
           itemId: heal_ticket
           slot: 20
           type: COMMAND
-          name: "回復券"
           price: 250
           amount: 1
-          lore:
-            - "<yellow>価格: 250G</yellow>"
-            - "<gray>購入すると即時回復します</gray>"
           commands:
             - "effect give %player% minecraft:instant_health 1 1"
             - "effect give %player% minecraft:regeneration 10 1"
@@ -98,13 +75,9 @@ shop:
           itemId: starter_set
           slot: 24
           type: COMMAND
-          name: "初心者セット"
           price: 0
           amount: 1
           limit: 1
-          lore:
-            - "<yellow>価格: #price#G</yellow>"
-            - "<gray>1回だけ購入できます</gray>"
           commands:
             - "give %player% minecraft:bread 16"
             - "give %player% minecraft:stone_sword 1"

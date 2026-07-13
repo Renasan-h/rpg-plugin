@@ -24,10 +24,6 @@ public class ShopItemDto {
      */
     private final ShopItemType type;
     /**
-     * アイテム名
-     */
-    private final String name;
-    /**
      * 買値
      */
     private final int price;
@@ -48,10 +44,6 @@ public class ShopItemDto {
      */
     private final String permission;
     /**
-     * アイテムの説明
-     */
-    private final List<String> lore;
-    /**
      * アイテムの特殊コマンド
      */
     private final List<String> commands;
@@ -62,13 +54,11 @@ public class ShopItemDto {
      * @param itemId     アイテムID
      * @param slot       スロット番号
      * @param type       タイプ
-     * @param name       名前
      * @param price      買値
      * @param sellPrice  売値
      * @param amount     購入個数
      * @param limit      購入上限
      * @param permission 権限
-     * @param lore       説明
      * @param commands   特殊コマンド
      */
     public ShopItemDto(
@@ -76,26 +66,22 @@ public class ShopItemDto {
             String itemId,
             int slot,
             ShopItemType type,
-            String name,
             int price,
             int sellPrice,
             int amount,
             int limit,
             String permission,
-            List<String> lore,
             List<String> commands
     ) {
         this.id = id;
         this.itemId = itemId;
         this.slot = slot;
         this.type = type;
-        this.name = name;
         this.price = price;
         this.sellPrice = sellPrice;
         this.amount = amount;
         this.limit = limit;
         this.permission = permission;
-        this.lore = lore;
         this.commands = commands;
     }
 
@@ -113,10 +99,6 @@ public class ShopItemDto {
 
     public ShopItemType getType() {
         return type;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public int getPrice() {
@@ -137,10 +119,6 @@ public class ShopItemDto {
 
     public String getPermission() {
         return permission;
-    }
-
-    public List<String> getLore() {
-        return lore;
     }
 
     public List<String> getCommands() {

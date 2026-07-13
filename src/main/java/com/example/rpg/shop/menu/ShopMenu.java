@@ -291,8 +291,8 @@ public class ShopMenu {
     ) {
         final ItemStack itemStack = itemBuilder.build(item.getItemId(), item.getAmount());
         final ItemMeta meta = itemStack.getItemMeta();
-        
-        meta.lore(createItemLore(item));
+
+        meta.lore(createItemLore(meta, item));
 
         final PersistentDataContainer pdc =
                 meta.getPersistentDataContainer();
@@ -316,21 +316,38 @@ public class ShopMenu {
     }
 
     /**
-     * 商品Loreを生成する。
+     * RPGアイテム本来のLoreへSHOP表示情報を追加する。
      *
-     * @param item 商品定義
-     * @return 表示用Lore
+     * @param meta ItemBuilderが生成したItemMeta
+     * @param item SHOP商品定義
+     * @return SHOP表示用Lore
      */
-    private List<Component> createItemLore(final ShopItemDto item) {
-        final List<Component> lore = new ArrayList<>(
-                item.getLore()
-                        .stream()
-                        .map(MessageUtil::mm)
-                        .toList()
-        );
+    private List<Component> createItemLore(final ItemMeta meta, final ShopItemDto item) {
+        final List<Component> lore = new ArrayList<>();
+        final List<Component> itemLore = meta.lore();
+
+        if (itemLore != null && !itemLore.isEmpty()) {
+            lore.addAll(itemLore);
+        }
 
         lore.add(Component.empty());
-        lore.add(MessageUtil.mm("<green>クリックして購入</green>"));
+        lore.add(MessageUtil.mm(
+                "<yellow>価格: "
+                        + item.getPrice()
+                        + "G</yellow>"
+        ));
+
+        if (item.isSellable()) {
+            lore.add(MessageUtil.mm(
+                    "<gray>売却: "
+                            + item.getSellPrice()
+                            + "G</gray>"
+            ));
+        }
+
+        lore.add(MessageUtil.mm(
+                "<green>クリックして購入</green>"
+        ));
 
         return List.copyOf(lore);
     }

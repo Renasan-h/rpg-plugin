@@ -1,6 +1,6 @@
-package com.example.rpg.repository;
+package com.example.rpg.shop.repository;
 
-import com.example.rpg.repository.interfaces.IShopPurchaseRepository;
+import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 

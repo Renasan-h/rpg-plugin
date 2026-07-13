@@ -1,10 +1,10 @@
-package com.example.rpg.repository;
+package com.example.rpg.shop.repository;
 
-import com.example.rpg.dto.ShopCategoryDto;
-import com.example.rpg.dto.ShopDto;
-import com.example.rpg.dto.ShopItemDto;
-import com.example.rpg.dto.ShopItemType;
-import com.example.rpg.repository.interfaces.IShopRepository;
+import com.example.rpg.shop.dto.ShopCategoryDto;
+import com.example.rpg.shop.dto.ShopDto;
+import com.example.rpg.shop.dto.ShopItemDto;
+import com.example.rpg.shop.dto.ShopItemType;
+import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.util.RpgUtil;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -221,7 +221,7 @@ public class ShopRepository implements IShopRepository {
         }
         return null;
     }
-    
+
     /**
      * {@inheritDoc}
      */

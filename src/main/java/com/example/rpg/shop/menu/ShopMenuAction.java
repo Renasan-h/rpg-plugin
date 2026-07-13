@@ -1,4 +1,4 @@
-package com.example.rpg.menu;
+package com.example.rpg.shop.menu;
 
 /**
  * SHOP GUI上で実行可能な操作種別。

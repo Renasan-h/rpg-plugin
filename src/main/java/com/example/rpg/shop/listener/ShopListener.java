@@ -1,6 +1,6 @@
-package com.example.rpg.listener;
+package com.example.rpg.shop.listener;
 
-import com.example.rpg.facade.ShopFacade;
+import com.example.rpg.shop.facade.ShopFacade;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;

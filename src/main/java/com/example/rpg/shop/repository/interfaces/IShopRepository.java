@@ -1,8 +1,8 @@
-package com.example.rpg.repository.interfaces;
+package com.example.rpg.shop.repository.interfaces;
 
-import com.example.rpg.dto.ShopCategoryDto;
-import com.example.rpg.dto.ShopDto;
-import com.example.rpg.dto.ShopItemDto;
+import com.example.rpg.shop.dto.ShopCategoryDto;
+import com.example.rpg.shop.dto.ShopDto;
+import com.example.rpg.shop.dto.ShopItemDto;
 import org.bukkit.Material;
 
 import java.util.List;

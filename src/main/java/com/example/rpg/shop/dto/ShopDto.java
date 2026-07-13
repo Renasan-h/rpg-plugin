@@ -1,4 +1,4 @@
-package com.example.rpg.dto;
+package com.example.rpg.shop.dto;
 
 import java.util.Map;
 

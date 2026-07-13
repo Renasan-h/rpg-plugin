@@ -1,10 +1,10 @@
-package com.example.rpg.service;
+package com.example.rpg.shop.service;
 
-import com.example.rpg.constants.ShopServiceConst;
-import com.example.rpg.dto.ShopItemDto;
 import com.example.rpg.repository.interfaces.IMoneyRepository;
-import com.example.rpg.repository.interfaces.IShopPurchaseRepository;
-import com.example.rpg.repository.interfaces.IShopRepository;
+import com.example.rpg.shop.constants.ShopServiceConst;
+import com.example.rpg.shop.dto.ShopItemDto;
+import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
+import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.util.MessageUtil;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;

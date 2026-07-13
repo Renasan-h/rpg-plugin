@@ -1,6 +1,6 @@
-package com.example.rpg.command;
+package com.example.rpg.shop.command;
 
-import com.example.rpg.repository.interfaces.IShopPurchaseRepository;
+import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;

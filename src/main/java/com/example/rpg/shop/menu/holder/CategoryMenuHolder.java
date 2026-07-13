@@ -1,4 +1,4 @@
-package com.example.rpg.menu.holder;
+package com.example.rpg.shop.menu.holder;
 
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;

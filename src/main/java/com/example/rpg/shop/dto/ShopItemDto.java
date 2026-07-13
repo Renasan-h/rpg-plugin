@@ -1,4 +1,4 @@
-package com.example.rpg.dto;
+package com.example.rpg.shop.dto;
 
 import org.bukkit.Material;
 
@@ -119,7 +119,7 @@ public class ShopItemDto {
         this.commands = commands;
         this.displayName = this.dispLabel.replaceAll("#dispColor#", this.dispColor).replaceAll("name", this.name);
     }
-    
+
     public String getId() {
         return id;
     }

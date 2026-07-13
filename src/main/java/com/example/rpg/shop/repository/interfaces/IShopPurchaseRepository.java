@@ -1,4 +1,4 @@
-package com.example.rpg.repository.interfaces;
+package com.example.rpg.shop.repository.interfaces;
 
 import java.util.UUID;
 

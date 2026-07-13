@@ -1,14 +1,14 @@
-package com.example.rpg.facade;
+package com.example.rpg.shop.facade;
 
-import com.example.rpg.dto.ShopCategoryDto;
-import com.example.rpg.dto.ShopItemDto;
-import com.example.rpg.menu.ShopMenu;
-import com.example.rpg.menu.ShopMenuAction;
-import com.example.rpg.menu.holder.CategoryMenuHolder;
-import com.example.rpg.menu.holder.ItemMenuHolder;
-import com.example.rpg.menu.pdc.ShopPdcKeys;
-import com.example.rpg.repository.interfaces.IShopRepository;
-import com.example.rpg.service.ShopService;
+import com.example.rpg.shop.dto.ShopCategoryDto;
+import com.example.rpg.shop.dto.ShopItemDto;
+import com.example.rpg.shop.menu.ShopMenu;
+import com.example.rpg.shop.menu.ShopMenuAction;
+import com.example.rpg.shop.menu.holder.CategoryMenuHolder;
+import com.example.rpg.shop.menu.holder.ItemMenuHolder;
+import com.example.rpg.shop.menu.pdc.ShopPdcKeys;
+import com.example.rpg.shop.repository.interfaces.IShopRepository;
+import com.example.rpg.shop.service.ShopService;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.InventoryHolder;

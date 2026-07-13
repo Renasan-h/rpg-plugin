@@ -1,7 +1,7 @@
-package com.example.rpg.command;
+package com.example.rpg.shop.command;
 
-import com.example.rpg.facade.ShopFacade;
-import com.example.rpg.service.ShopService;
+import com.example.rpg.shop.facade.ShopFacade;
+import com.example.rpg.shop.service.ShopService;
 import com.example.rpg.util.MessageUtil;
 import com.example.rpg.util.RpgUtil;
 import org.bukkit.command.Command;

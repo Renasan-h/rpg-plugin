@@ -1,4 +1,4 @@
-package com.example.rpg.menu.pdc;
+package com.example.rpg.shop.menu.pdc;
 
 import org.bukkit.NamespacedKey;
 import org.bukkit.plugin.java.JavaPlugin;

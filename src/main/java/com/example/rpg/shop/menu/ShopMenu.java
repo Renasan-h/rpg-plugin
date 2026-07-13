@@ -1,12 +1,12 @@
-package com.example.rpg.menu;
+package com.example.rpg.shop.menu;
 
-import com.example.rpg.dto.ShopCategoryDto;
-import com.example.rpg.dto.ShopDto;
-import com.example.rpg.dto.ShopItemDto;
-import com.example.rpg.menu.holder.CategoryMenuHolder;
-import com.example.rpg.menu.holder.ItemMenuHolder;
-import com.example.rpg.menu.pdc.ShopPdcKeys;
-import com.example.rpg.repository.interfaces.IShopRepository;
+import com.example.rpg.shop.dto.ShopCategoryDto;
+import com.example.rpg.shop.dto.ShopDto;
+import com.example.rpg.shop.dto.ShopItemDto;
+import com.example.rpg.shop.menu.holder.CategoryMenuHolder;
+import com.example.rpg.shop.menu.holder.ItemMenuHolder;
+import com.example.rpg.shop.menu.pdc.ShopPdcKeys;
+import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.util.MessageUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;

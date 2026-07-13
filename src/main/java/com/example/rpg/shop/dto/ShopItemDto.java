@@ -14,6 +14,10 @@ public class ShopItemDto {
      */
     private final String id;
     /**
+     * アイテムID
+     */
+    private final String itemId;
+    /**
      * 表示箇所スロット番号
      */
     private final int slot;
@@ -73,6 +77,7 @@ public class ShopItemDto {
     /**
      *
      * @param id         キー
+     * @param itemId     アイテムID
      * @param slot       スロット番号
      * @param type       タイプ
      * @param material   材質
@@ -89,6 +94,7 @@ public class ShopItemDto {
      */
     public ShopItemDto(
             String id,
+            String itemId,
             int slot,
             ShopItemType type,
             Material material,
@@ -104,6 +110,7 @@ public class ShopItemDto {
             List<String> commands
     ) {
         this.id = id;
+        this.itemId = itemId;
         this.slot = slot;
         this.type = type;
         this.material = material;
@@ -122,6 +129,10 @@ public class ShopItemDto {
 
     public String getId() {
         return id;
+    }
+
+    public String getItemId() {
+        return itemId;
     }
 
     public int getSlot() {

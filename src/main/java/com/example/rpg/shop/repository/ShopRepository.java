@@ -141,6 +141,7 @@ public class ShopRepository implements IShopRepository {
         }
 
         String name = section.getString("name", id);
+        String itemId = section.getString("itemId", id);
         String color = section.getString("dispColor", "white");
         String label = section.getString("dispLabel", "<#dispColor#>#name#</#dispColor#>");
         int price = section.getInt("price", 0);
@@ -158,6 +159,7 @@ public class ShopRepository implements IShopRepository {
 
         return new ShopItemDto(
                 id,
+                itemId,
                 slot,
                 type,
                 material,

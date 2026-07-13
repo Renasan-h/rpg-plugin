@@ -10,6 +10,7 @@ shop:
       name: "<gold>武器</gold>"
       items:
         iron_sword:
+          itemId: iron_sword
           slot: 10
           material: IRON_SWORD
           name: "鉄の剣"
@@ -24,6 +25,7 @@ shop:
             - "<gray>序盤用の武器</gray>"
 
         vip_sword:
+          itemId: diamond_sword
           slot: 22
           type: ITEM
           material: DIAMOND_SWORD
@@ -42,6 +44,7 @@ shop:
       name: "<blue>防具</blue>"
       items:
         shield:
+          itemId: shield
           slot: 14
           material: SHIELD
           name: "盾"
@@ -57,6 +60,7 @@ shop:
       name: "<yellow>食料</yellow>"
       items:
         bread:
+          itemId: bread
           slot: 12
           material: BREAD
           name: "パン"
@@ -75,6 +79,7 @@ shop:
       name: "<#89F336>ポーション</#89F336>"
       items:
         potion:
+          itemId: potion
           slot: 16
           material: POTION
           name: "回復ポーション"
@@ -91,6 +96,7 @@ shop:
       name: "<green>特殊</green>"
       items:
         heal_ticket:
+          itemId: heal_ticket
           slot: 20
           type: COMMAND
           material: PAPER
@@ -107,6 +113,7 @@ shop:
             - "effect give %player% minecraft:regeneration 10 1"
 
         starter_set:
+          itemId: starter_set
           slot: 24
           type: COMMAND
           material: CHEST

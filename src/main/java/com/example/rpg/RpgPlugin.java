@@ -20,7 +20,7 @@ import com.example.rpg.shop.listener.ShopListener;
 import com.example.rpg.shop.menu.ShopMenu;
 import com.example.rpg.shop.menu.pdc.ShopPdcKeys;
 import com.example.rpg.shop.repository.ShopPurchaseRepository;
-import com.example.rpg.shop.repository.ShopRepository;
+import com.example.rpg.shop.repository.YamlShopRepository;
 import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.shop.service.ShopService;
@@ -39,7 +39,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      */
     ExpService expService;
     /**
-     * ShopRepository
+     * YamlShopRepository
      */
     private IShopRepository shopRepository;
     /**
@@ -129,7 +129,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      */
     private void initializeRepositories() {
 
-        this.shopRepository = new ShopRepository(
+        this.shopRepository = new YamlShopRepository(
                 YamlConfiguration.loadConfiguration(new File(getDataFolder(), "shop.yml")));
         this.moneyRepository = new MoneyRepository(
                 this, new File(getDataFolder(), "money.yml"));

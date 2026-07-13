@@ -27,7 +27,7 @@ import java.util.*;
  * データ取得方法の変更をRepository内へ閉じ込められる。
  * </p>
  */
-public class ShopRepository implements IShopRepository {
+public class YamlShopRepository implements IShopRepository {
 
     private final YamlConfiguration config;
     /**
@@ -44,7 +44,7 @@ public class ShopRepository implements IShopRepository {
      * SHOP Repositoryを生成する。
      *
      */
-    public ShopRepository(YamlConfiguration config) {
+    public YamlShopRepository(YamlConfiguration config) {
         this.config = config;
         load();
     }

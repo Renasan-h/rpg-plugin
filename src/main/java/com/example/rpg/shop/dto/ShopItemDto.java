@@ -30,10 +30,6 @@ public class ShopItemDto {
      */
     private final Material material;
     /**
-     * アイテム名
-     */
-    private final String name;
-    /**
      * 買値
      */
     private final int price;
@@ -69,7 +65,6 @@ public class ShopItemDto {
      * @param slot       スロット番号
      * @param type       タイプ
      * @param material   材質
-     * @param name       名前
      * @param price      買値
      * @param sellPrice  売値
      * @param amount     購入個数
@@ -84,7 +79,6 @@ public class ShopItemDto {
             int slot,
             ShopItemType type,
             Material material,
-            String name,
             int price,
             int sellPrice,
             int amount,
@@ -98,7 +92,6 @@ public class ShopItemDto {
         this.slot = slot;
         this.type = type;
         this.material = material;
-        this.name = name;
         this.price = price;
         this.sellPrice = sellPrice;
         this.amount = amount;
@@ -126,10 +119,6 @@ public class ShopItemDto {
 
     public Material getMaterial() {
         return material;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public int getPrice() {

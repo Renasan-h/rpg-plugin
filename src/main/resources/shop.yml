@@ -12,7 +12,6 @@ shop:
         iron_sword:
           itemId: iron_sword
           slot: 10
-          material: IRON_SWORD
           name: "鉄の剣"
           price: 100
           sellPrice: 30
@@ -26,7 +25,6 @@ shop:
           itemId: diamond_sword
           slot: 22
           type: ITEM
-          material: DIAMOND_SWORD
           name: "VIP専用剣"
           price: 10000
           amount: 1
@@ -42,7 +40,6 @@ shop:
         shield:
           itemId: shield
           slot: 14
-          material: SHIELD
           name: "盾"
           price: 80
           amount: 1
@@ -56,7 +53,6 @@ shop:
         bread:
           itemId: bread
           slot: 12
-          material: BREAD
           name: "パン"
           price: 10
           sellPrice: 3
@@ -73,7 +69,6 @@ shop:
         potion:
           itemId: potion
           slot: 16
-          material: POTION
           name: "回復ポーション"
           price: 50
           amount: 1
@@ -89,7 +84,6 @@ shop:
           itemId: heal_ticket
           slot: 20
           type: COMMAND
-          material: PAPER
           name: "回復券"
           price: 250
           amount: 1
@@ -104,7 +98,6 @@ shop:
           itemId: starter_set
           slot: 24
           type: COMMAND
-          material: CHEST
           name: "初心者セット"
           price: 0
           amount: 1

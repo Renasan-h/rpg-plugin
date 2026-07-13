@@ -6,6 +6,7 @@ import com.example.rpg.item.ItemBuilder;
 import com.example.rpg.item.pdc.ItemPdcKeys;
 import com.example.rpg.item.repository.YamlItemRepository;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
+import com.example.rpg.item.service.ItemPdcService;
 import com.example.rpg.listener.BlockBreakListener;
 import com.example.rpg.listener.EntityKillListener;
 import com.example.rpg.listener.ServerPingListener;
@@ -67,6 +68,12 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * ShopService
      */
     private ShopService shopService;
+
+    /**
+     * ItemPdcService
+     */
+    private ItemPdcService itemPdcService;
+
     /**
      * ShopMenu
      */
@@ -91,8 +98,8 @@ public class RpgPlugin extends JavaPlugin implements Listener {
 
         // 初期化フェーズ
         initializeRepositories();
-        initializeServices();
         initializeBuilders();
+        initializeServices();
         initializeMenus();
         initializeFacades();
 
@@ -140,10 +147,15 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     private void initializeServices() {
 
         this.expService = new ExpService();
+
+        this.itemPdcService = new ItemPdcService(itemPdcKeys);
         this.shopService = new ShopService(
                 shopRepository,
                 moneyRepository,
-                shopPurchaseRepository
+                shopPurchaseRepository,
+                itemPdcKeys,
+                itemPdcService,
+                itemBuilder
         );
     }
 

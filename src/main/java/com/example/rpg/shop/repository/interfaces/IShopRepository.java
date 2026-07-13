@@ -3,7 +3,6 @@ package com.example.rpg.shop.repository.interfaces;
 import com.example.rpg.shop.dto.ShopCategoryDto;
 import com.example.rpg.shop.dto.ShopDto;
 import com.example.rpg.shop.dto.ShopItemDto;
-import org.bukkit.Material;
 
 import java.util.List;
 
@@ -80,13 +79,15 @@ public interface IShopRepository {
     ShopItemDto findShopItemById(String itemId);
 
     /**
-     * Materialから売却可能なSHOP商品を取得する。
+     * RPGアイテムIDから売却可能なSHOP商品を取得する。
      *
-     * <p>売却対象の検索はSHOP定義全体を横断するため、
-     * ServiceではなくRepositoryに閉じ込める。</p>
+     * <p>
+     * 同じMaterialを使用する複数のRPGアイテムを区別するため、
+     * BukkitのMaterialではなくRPGアイテムIDを検索条件とする。
+     * </p>
      *
-     * @param material Bukkit Material
+     * @param itemId RPGアイテムID
      * @return 売却可能商品。存在しない場合はnull
      */
-    ShopItemDto findShopSellableItem(Material material);
+    ShopItemDto findShopSellableItem(String itemId);
 }

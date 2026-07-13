@@ -1,7 +1,5 @@
 package com.example.rpg.shop.dto;
 
-import org.bukkit.Material;
-
 import java.util.List;
 
 /**
@@ -25,10 +23,6 @@ public class ShopItemDto {
      * タイプ（ITEM or COMMAND）
      */
     private final ShopItemType type;
-    /**
-     * 材質
-     */
-    private final Material material;
     /**
      * アイテム名
      */
@@ -68,7 +62,6 @@ public class ShopItemDto {
      * @param itemId     アイテムID
      * @param slot       スロット番号
      * @param type       タイプ
-     * @param material   材質
      * @param name       名前
      * @param price      買値
      * @param sellPrice  売値
@@ -83,7 +76,6 @@ public class ShopItemDto {
             String itemId,
             int slot,
             ShopItemType type,
-            Material material,
             String name,
             int price,
             int sellPrice,
@@ -97,7 +89,6 @@ public class ShopItemDto {
         this.itemId = itemId;
         this.slot = slot;
         this.type = type;
-        this.material = material;
         this.name = name;
         this.price = price;
         this.sellPrice = sellPrice;
@@ -122,10 +113,6 @@ public class ShopItemDto {
 
     public ShopItemType getType() {
         return type;
-    }
-
-    public Material getMaterial() {
-        return material;
     }
 
     public String getName() {

@@ -133,13 +133,6 @@ public class ShopRepository implements IShopRepository {
         String typeText = section.getString("type", "ITEM");
         ShopItemType type = ShopItemType.valueOf(typeText.toUpperCase());
 
-        String materialText = section.getString("material", "STONE");
-        Material material = Material.matchMaterial(materialText);
-
-        if (material == null) {
-            throw new IllegalArgumentException("不正な material です: " + materialText + " / itemId=" + id);
-        }
-
         String name = section.getString("name", id);
         String itemId = section.getString("itemId", id);
         int price = section.getInt("price", 0);
@@ -160,7 +153,6 @@ public class ShopRepository implements IShopRepository {
                 itemId,
                 slot,
                 type,
-                material,
                 name,
                 price,
                 sellPrice,
@@ -223,13 +215,18 @@ public class ShopRepository implements IShopRepository {
     /**
      * {@inheritDoc}
      */
-    public ShopItemDto findShopSellableItem(Material material) {
+    @Override
+    public ShopItemDto findShopSellableItem(final String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            return null;
+        }
+
         return shopDto.getCategories()
                 .values()
                 .stream()
                 .flatMap(category -> category.getItems().values().stream())
                 .filter(ShopItemDto::isSellable)
-                .filter(item -> item.getMaterial() == material)
+                .filter(item -> item.getItemId().equals(itemId))
                 .findFirst()
                 .orElse(null);
     }

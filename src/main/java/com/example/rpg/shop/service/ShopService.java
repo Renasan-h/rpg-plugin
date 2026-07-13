@@ -1,6 +1,9 @@
 package com.example.rpg.shop.service;
 
 import com.example.rpg.common.message.MessageUtil;
+import com.example.rpg.item.ItemBuilder;
+import com.example.rpg.item.pdc.ItemPdcKeys;
+import com.example.rpg.item.service.ItemPdcService;
 import com.example.rpg.repository.interfaces.IMoneyRepository;
 import com.example.rpg.shop.constants.ShopServiceConst;
 import com.example.rpg.shop.dto.ShopItemDto;
@@ -35,20 +38,45 @@ public class ShopService {
     private final IMoneyRepository moneyRepository;
 
     /**
+     * RPGアイテム用PDCキー。
+     */
+    private final ItemPdcKeys itemPdcKeys;
+
+    /**
+     * ItemPdc操作Service
+     */
+    private final ItemPdcService itemPdcService;
+
+    /**
+     * RPGアイテム生成Builder。
+     */
+    private final ItemBuilder itemBuilder;
+
+
+    /**
      * ShopServiceを生成する。
      *
      * @param shopRepository         SHOP定義Repository
      * @param moneyRepository        所持金Repository
      * @param shopPurchaseRepository 購入履歴Repository
+     * @param itemPdcKeys            RPGアイテム用PDCキー
+     * @param itemPdcService         ItemPdc操作用サービス
+     * @param itemBuilder            RPGアイテム生成Builder
      */
     public ShopService(
-            IShopRepository shopRepository,
-            IMoneyRepository moneyRepository,
-            IShopPurchaseRepository shopPurchaseRepository
+            final IShopRepository shopRepository,
+            final IMoneyRepository moneyRepository,
+            final IShopPurchaseRepository shopPurchaseRepository,
+            final ItemPdcKeys itemPdcKeys,
+            final ItemPdcService itemPdcService,
+            final ItemBuilder itemBuilder
     ) {
         this.shopRepository = shopRepository;
         this.moneyRepository = moneyRepository;
         this.shopPurchaseRepository = shopPurchaseRepository;
+        this.itemPdcKeys = itemPdcKeys;
+        this.itemPdcService = itemPdcService;
+        this.itemBuilder = itemBuilder;
     }
 
     /**
@@ -210,10 +238,7 @@ public class ShopService {
      * @param shopItem 商品定義
      */
     private void buyItem(Player player, ShopItemDto shopItem) {
-        ItemStack itemStack = new ItemStack(
-                shopItem.getMaterial(),
-                shopItem.getAmount()
-        );
+        ItemStack itemStack = itemBuilder.build(shopItem.getItemId(), shopItem.getAmount());
 
         player.getInventory().addItem(itemStack);
     }
@@ -294,7 +319,9 @@ public class ShopService {
      * @return 売却可能商品。存在しない場合はnull
      */
     private ShopItemDto findSellableItem(final ItemStack itemInHand) {
-        return shopRepository.findShopSellableItem(itemInHand.getType());
+        final String itemId = itemPdcService.getItemId(itemInHand);
+
+        return shopRepository.findShopSellableItem(itemId);
     }
 
     /**

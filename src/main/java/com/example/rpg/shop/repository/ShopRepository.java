@@ -140,6 +140,7 @@ public class ShopRepository implements IShopRepository {
             throw new IllegalArgumentException("不正な material です: " + materialText + " / itemId=" + id);
         }
 
+        String name = section.getString("name", id);
         String itemId = section.getString("itemId", id);
         int price = section.getInt("price", 0);
         // 売却額の指定がない場合は1/3の価格で設定する
@@ -160,6 +161,7 @@ public class ShopRepository implements IShopRepository {
                 slot,
                 type,
                 material,
+                name,
                 price,
                 sellPrice,
                 amount,

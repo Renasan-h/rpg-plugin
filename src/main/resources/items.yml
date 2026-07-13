@@ -5,38 +5,14 @@ items:
     lore:
       - "<gray>一般的な鉄製の剣</gray>"
 
-  diamond_sword:
-    material: DIAMOND_SWORD
-    displayName: "<aqua>VIP専用剣</aqua>"
-    lore:
-      - "<gray>VIP会員向けの特別な剣</gray>"
-
-  shield:
-    material: SHIELD
-    displayName: "<white>盾</white>"
-    lore:
-      - "<gray>攻撃から身を守る盾</gray>"
-
   bread:
     material: BREAD
     displayName: "<white>パン</white>"
     lore:
       - "<gray>空腹を満たす食料</gray>"
 
-  potion:
-    material: POTION
-    displayName: "<#89F336>回復ポーション</#89F336>"
+  shield:
+    material: SHIELD
+    displayName: "<white>盾</white>"
     lore:
-      - "<gray>体力を回復するポーション</gray>"
-
-  heal_ticket:
-    material: PAPER
-    displayName: "<green>回復券</green>"
-    lore:
-      - "<gray>購入すると即時回復します</gray>"
-
-  starter_set:
-    material: CHEST
-    displayName: "<yellow>初心者セット</yellow>"
-    lore:
-      - "<gray>冒険開始に役立つアイテムセット</gray>"
+      - "<gray>攻撃から身を守る盾</gray>"

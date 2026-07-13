@@ -167,7 +167,8 @@ public class RpgPlugin extends JavaPlugin implements Listener {
 
         this.shopMenu = new ShopMenu(
                 shopRepository,
-                shopPdcKeys
+                shopPdcKeys,
+                itemBuilder
         );
     }
 

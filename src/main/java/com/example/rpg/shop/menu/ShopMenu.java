@@ -1,6 +1,7 @@
 package com.example.rpg.shop.menu;
 
 import com.example.rpg.common.message.MessageUtil;
+import com.example.rpg.item.ItemBuilder;
 import com.example.rpg.shop.dto.ShopCategoryDto;
 import com.example.rpg.shop.dto.ShopDto;
 import com.example.rpg.shop.dto.ShopItemDto;
@@ -90,15 +91,25 @@ public class ShopMenu {
     private final ShopPdcKeys pdcKeys;
 
     /**
-     * コンストラクタ。
+     * RPGアイテム生成Builder
+     */
+    private final ItemBuilder itemBuilder;
+
+    /**
+     * ShopMenuを生成する。
      *
      * @param shopRepository SHOP設定Repository
+     * @param pdcKeys        SHOP GUI用PDCキー
+     * @param itemBuilder    RPGアイテム生成Builder
      */
     public ShopMenu(
             final IShopRepository shopRepository,
-            final ShopPdcKeys pdcKeys) {
+            final ShopPdcKeys pdcKeys,
+            final ItemBuilder itemBuilder
+    ) {
         this.shopRepository = shopRepository;
         this.pdcKeys = pdcKeys;
+        this.itemBuilder = itemBuilder;
     }
 
     /**
@@ -278,14 +289,10 @@ public class ShopMenu {
             final ShopItemDto item,
             final String categoryId
     ) {
-        final ItemStack itemStack = new ItemStack(item.getMaterial(), item.getAmount());
+        final ItemStack itemStack = itemBuilder.build(item.getItemId(), item.getAmount());
         final ItemMeta meta = itemStack.getItemMeta();
-
-        meta.displayName(MessageUtil.mm(item.getDisplayName()));
+        
         meta.lore(createItemLore(item));
-        // SHOP商品はRPG専用Loreで性能を表現するため、
-        // Minecraft標準の攻撃力や追加Tooltipを表示しない。
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
         final PersistentDataContainer pdc =
                 meta.getPersistentDataContainer();

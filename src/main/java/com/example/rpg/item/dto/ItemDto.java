@@ -1,6 +1,7 @@
 package com.example.rpg.item.dto;
 
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemFlag;
 
 import java.util.List;
 import java.util.Objects;
@@ -35,19 +36,26 @@ public class ItemDto {
     private final List<String> lore;
 
     /**
+     * ItemFlags。
+     */
+    private final List<ItemFlag> itemFlags;
+
+    /**
      * ItemDtoを生成する。
      *
      * @param id          ItemId
      * @param material    Minecraft Material
      * @param displayName MiniMessage形式の表示名
      * @param lore        MiniMessage形式のLore
+     * @param itemFlags   ItemFlags
      * @throws NullPointerException 引数がnullの場合
      */
     public ItemDto(
             final String id,
             final Material material,
             final String displayName,
-            final List<String> lore
+            final List<String> lore,
+            final List<ItemFlag> itemFlags
     ) {
         this.id = Objects.requireNonNull(
                 id,
@@ -66,6 +74,13 @@ public class ItemDto {
                         lore,
                         "lore must not be null"
                 )
+        );
+        this.itemFlags = List.copyOf(
+                Objects.requireNonNull(
+                        itemFlags,
+                        "itemFlags must not be null"
+                )
+
         );
     }
 
@@ -103,5 +118,14 @@ public class ItemDto {
      */
     public List<String> getLore() {
         return lore;
+    }
+
+    /**
+     * ItemFlag一覧を取得する。
+     *
+     * @return 変更不可能なItemFlag一覧
+     */
+    public List<ItemFlag> getItemFlags() {
+        return itemFlags;
     }
 }

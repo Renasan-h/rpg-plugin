@@ -6,6 +6,7 @@ import com.example.rpg.item.repository.interfaces.IItemRepository;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemFlag;
 
 import java.util.*;
 
@@ -114,12 +115,66 @@ public class YamlItemRepository implements IItemRepository {
 
         final List<String> lore = section.getStringList("lore");
 
+        final List<ItemFlag> itemFlags = loadItemFlags(
+                itemId,
+                section
+        );
+
         return new ItemDto(
                 itemId,
                 material,
                 displayName,
-                lore
+                lore,
+                itemFlags
         );
+    }
+
+    /**
+     * YAMLからItemFlag一覧を読み込む。
+     *
+     * <p>
+     * 文字列からBukkitのItemFlagへの変換はRepository内で行い、
+     * ItemBuilderへ設定ファイルの形式を漏らさない。
+     * </p>
+     *
+     * @param itemId  アイテムID
+     * @param section アイテム設定セクション
+     * @return ItemFlag一覧
+     * @throws IllegalArgumentException 未対応のItemFlagが指定された場合
+     */
+    private List<ItemFlag> loadItemFlags(
+            final String itemId,
+            final ConfigurationSection section
+    ) {
+        return section.getStringList("itemFlags")
+                .stream()
+                .map(flaName -> parseItemFlag(itemId, flaName))
+                .toList();
+    }
+
+    /**
+     * ItemFlag名をBukkitのItemFlagへ変換する。
+     *
+     * @param itemId   アイテムID
+     * @param flagName ItemFlag名
+     * @return 変換したItemFlag
+     * @throws IllegalArgumentException 未対応のItemFlagが指定された場合
+     */
+    private ItemFlag parseItemFlag(
+            final String itemId,
+            final String flagName
+    ) {
+        try {
+            return ItemFlag.valueOf(flagName.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException(
+                    "Unknown ItemFlag: "
+                            + flagName
+                            + " / itemId="
+                            + itemId,
+                    ex
+            );
+        }
     }
 
     /**

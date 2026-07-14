@@ -129,7 +129,7 @@ public class ItemBuilder {
 
         applyDisplayName(meta, item);
         applyLore(meta, item);
-        applyItemFlags(meta);
+        applyItemFlags(meta, item);
         applyPersistentData(meta, item);
 
         itemStack.setItemMeta(meta);
@@ -169,14 +169,23 @@ public class ItemBuilder {
     }
 
     /**
-     * RPGアイテム共通のItemFlagを設定する。
+     * アイテム定義に設定されたItemFlagを適用する。
      *
      * @param meta ItemMeta
+     * @param item アイテム定義
      */
-    private void applyItemFlags(final ItemMeta meta) {
-        // RPG独自Loreで性能を表示するため、
-        // Minecraft標準の攻撃力・防具値表示を隠す。
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+    private void applyItemFlags(
+            final ItemMeta meta,
+            final ItemDto item
+    ) {
+        if (item.getItemFlags().isEmpty()) {
+            return;
+        }
+
+        meta.addItemFlags(
+                item.getItemFlags()
+                        .toArray(ItemFlag[]::new)
+        );
     }
 
     /**

@@ -38,7 +38,29 @@ public class RpgCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        sender.sendMessage(MessageUtil.red("使い方： /rpg reload"));
+        if (args.length == 2) {
+            String fileName;
+
+            if (args[1].equalsIgnoreCase("shop")) {
+                fileName = "shop.yml";
+            } else if (args[1].equalsIgnoreCase("items")) {
+                fileName = "items.yml";
+            } else {
+                return false;
+            }
+
+            plugin.saveResource(fileName, false);
+
+            sender.sendMessage(MessageUtil.green(
+                    "RpgPlugin の "
+                            + fileName
+                            + " の再読み込みを行いました。"
+            ));
+
+            return true;
+        }
+
+        sender.sendMessage(MessageUtil.red("使い方： /rpg reload <shop|items>"));
         return false;
     }
 
@@ -56,6 +78,9 @@ public class RpgCommand implements CommandExecutor, TabCompleter {
             return List.of("reload").stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
+        }
+        if (args.length == 2) {
+            return List.of("shop", "items");
         }
 
         return List.of();

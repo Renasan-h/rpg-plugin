@@ -60,6 +60,11 @@ public class ItemDto {
     private final List<ItemEnchantDto> enchantments;
 
     /**
+     * アイテムへ付与するAttributeModifier一覧。
+     */
+    private final List<ItemAttributeDto> attributes;
+
+    /**
      * ItemDtoを生成する。
      *
      * @param id              ItemId
@@ -70,6 +75,7 @@ public class ItemDto {
      * @param unbreakable     耐久値を減少させない場合true
      * @param customModelData CustomModelData 未指定の場合はnull
      * @param enchantments    エンチャント一覧
+     * @param attributes      アイテムへ付与するArributeModifierの一覧
      * @throws NullPointerException 引数がnullの場合
      */
     public ItemDto(
@@ -80,7 +86,9 @@ public class ItemDto {
             final List<ItemFlag> itemFlags,
             final boolean unbreakable,
             final Integer customModelData,
-            final List<ItemEnchantDto> enchantments
+            final List<ItemEnchantDto> enchantments,
+            final List<ItemAttributeDto> attributes
+
     ) {
         this.id = Objects.requireNonNull(
                 id,
@@ -113,6 +121,10 @@ public class ItemDto {
                         enchantments,
                         "enchantments must not be null"
                 )
+        );
+        this.attributes = Objects.requireNonNull(
+                attributes,
+                "attributes must not be null"
         );
     }
 
@@ -186,6 +198,15 @@ public class ItemDto {
      */
     public List<ItemEnchantDto> getEnchantments() {
         return enchantments;
+    }
+
+    /**
+     * アイテムへ付与するAttributeModifier一覧を取得する。
+     *
+     * @return AttributeModifier一覧
+     */
+    public List<ItemAttributeDto> getAttributes() {
+        return attributes;
     }
 
 }

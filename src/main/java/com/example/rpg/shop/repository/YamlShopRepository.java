@@ -1,5 +1,6 @@
 package com.example.rpg.shop.repository;
 
+import com.example.rpg.common.exception.InvalidPropertyValueException;
 import com.example.rpg.shop.dto.ShopCategoryDto;
 import com.example.rpg.shop.dto.ShopDto;
 import com.example.rpg.shop.dto.ShopItemDto;
@@ -97,7 +98,11 @@ public class YamlShopRepository implements IShopRepository {
         Material icon = Material.matchMaterial(iconText);
 
         if (icon == null) {
-            throw new IllegalArgumentException("不正な category icon です： " + iconText + " / categoryId=" + id);
+            throw new InvalidPropertyValueException(
+                    id,
+                    "category icon",
+                    iconText
+            );
         }
 
         Map<String, ShopItemDto> items = new LinkedHashMap<>();

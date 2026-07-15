@@ -1,11 +1,38 @@
 items:
-  wood_sword:
-    material: WOOD_SWORD
+  wooden_sword_dev1:
+    material: WOODEN_SWORD
+    displayName: "<rainbow>木の剣(開発用1)</rainbow>"
+    lore:
+      - "<gray>一般的な木製の剣</gray>"
+    itemFlags:
+      - HIDE_UNBREAKABLE
+    unbreakable: true
+    customModelData: 9001
+    enchantments:
+      sharpness:
+        level: 10
+        ignoreLevelRestriction: true
+
+  wooden_sword_dev2:
+    material: WOODEN_SWORD
+    displayName: "<rainbow>木の剣(開発用2)</rainbow>"
+    lore:
+      - "<gray>一般的な木製の剣</gray>"
+    itemFlags:
+      - HIDE_ATTRIBUTES
+      - HIDE_UNBREAKABLE
+    unbreakable: true
+    customModelData: 9002
+
+  wooden_sword:
+    material: WOODEN_SWORD
     displayName: "<white>木の剣</white>"
     lore:
       - "<gray>一般的な木製の剣</gray>"
     itemFlags:
       - HIDE_ATTRIBUTES
+      - HIDE_UNBREAKABLE
+    unbreakable: true
 
   iron_sword:
     material: IRON_SWORD
@@ -22,6 +49,15 @@ items:
       - "<gray>VIP会員向けの特別な剣</gray>"
     itemFlags:
       - HIDE_ATTRIBUTES
+    customModelData: 1001
+    enchantments:
+      sharpness:
+        level: 5
+        ignoreLevelRestriction: false
+
+      fire_aspect:
+        level: 2
+        ignoreLevelRestriction: false
 
   shield:
     material: SHIELD
@@ -48,9 +84,11 @@ items:
     displayName: "<green>回復券</green>"
     lore:
       - "<gray>購入すると即時回復します</gray>"
+    customModelData: 1002
 
   starter_set:
     material: CHEST
     displayName: "<yellow>初心者セット</yellow>"
     lore:
       - "<gray>冒険開始に役立つアイテムセット</gray>"
+    customModelData: 1003

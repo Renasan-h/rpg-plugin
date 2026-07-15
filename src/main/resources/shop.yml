@@ -9,6 +9,18 @@ shop:
       icon: IRON_SWORD
       name: "<gold>武器</gold>"
       items:
+        wooden_sword_dev1:
+          itemId: wooden_sword_dev1
+          slot: 10
+          price: 100
+          sellPrice: 30
+          amount: 1
+        wooden_sword_dev2:
+          itemId: wooden_sword_dev2
+          slot: 10
+          price: 100000
+          sellPrice: 30
+          amount: 1
         iron_sword:
           itemId: iron_sword
           slot: 10

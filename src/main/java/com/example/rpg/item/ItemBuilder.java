@@ -2,6 +2,7 @@ package com.example.rpg.item;
 
 import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.item.dto.ItemDto;
+import com.example.rpg.item.dto.ItemEnchantDto;
 import com.example.rpg.item.pdc.ItemPdcKeys;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
 import net.kyori.adventure.text.Component;
@@ -130,6 +131,9 @@ public class ItemBuilder {
         applyDisplayName(meta, item);
         applyLore(meta, item);
         applyItemFlags(meta, item);
+        applyUnbreakable(meta, item);
+        applyCustomModelData(meta, item);
+        applyEnchantments(meta, item);
         applyPersistentData(meta, item);
 
         itemStack.setItemMeta(meta);
@@ -203,5 +207,61 @@ public class ItemBuilder {
                 PersistentDataType.STRING,
                 item.getId()
         );
+    }
+
+    /**
+     * アイテムのUnbreakable設定を適用する。
+     *
+     * @param meta ItemMeta
+     * @param item アイテム定義
+     */
+    private void applyUnbreakable(
+            final ItemMeta meta,
+            final ItemDto item
+    ) {
+        meta.setUnbreakable(item.isUnbreakable());
+    }
+
+    /**
+     * アイテム定義のCustomModelDataを適用する。
+     *
+     * <p>
+     * ItemMetaから取得したCustomModelDataComponentはスナップショットのため、
+     * 値を変更した後にItemMetaへ再設定する。
+     * </p>
+     *
+     * @param meta ItemMeta
+     * @param item アイテム定義
+     */
+    @SuppressWarnings("deprecation")
+    private void applyCustomModelData(
+            final ItemMeta meta,
+            final ItemDto item
+    ) {
+        final Integer customModelData = item.getCustomModelData();
+
+        if (customModelData == null) {
+            return;
+        }
+
+        meta.setCustomModelData(customModelData);
+    }
+
+    /**
+     * アイテム定義のエンチャントを適用する。
+     *
+     * @param meta ItemMeta
+     * @param item アイテム定義
+     */
+    private void applyEnchantments(
+            final ItemMeta meta,
+            final ItemDto item
+    ) {
+        for (ItemEnchantDto enchant : item.getEnchantments()) {
+            meta.addEnchant(enchant.getEnchantment(),
+                    enchant.getLevel(),
+                    enchant.isIgnoreLevelRestriction()
+            );
+        }
     }
 }

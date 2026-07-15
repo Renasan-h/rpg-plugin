@@ -41,13 +41,35 @@ public class ItemDto {
     private final List<ItemFlag> itemFlags;
 
     /**
+     * 耐久値を減少させないか。
+     */
+    private final boolean unbreakable;
+
+    /**
+     * リソースパックのモデル選択に使用するCustomModelData。
+     *
+     * <p>
+     * 未指定の場合はnull。
+     * </p>
+     */
+    private final Integer customModelData;
+
+    /**
+     * アイテムへ設定するエンチャント一覧。
+     */
+    private final List<ItemEnchantDto> enchantments;
+
+    /**
      * ItemDtoを生成する。
      *
-     * @param id          ItemId
-     * @param material    Minecraft Material
-     * @param displayName MiniMessage形式の表示名
-     * @param lore        MiniMessage形式のLore
-     * @param itemFlags   ItemFlags
+     * @param id              ItemId
+     * @param material        Minecraft Material
+     * @param displayName     MiniMessage形式の表示名
+     * @param lore            MiniMessage形式のLore
+     * @param itemFlags       ItemFlag一覧
+     * @param unbreakable     耐久値を減少させない場合true
+     * @param customModelData CustomModelData。未指定の場合はnull
+     * @param enchantments    エンチャント一覧
      * @throws NullPointerException 引数がnullの場合
      */
     public ItemDto(
@@ -55,7 +77,10 @@ public class ItemDto {
             final Material material,
             final String displayName,
             final List<String> lore,
-            final List<ItemFlag> itemFlags
+            final List<ItemFlag> itemFlags,
+            final boolean unbreakable,
+            final Integer customModelData,
+            final List<ItemEnchantDto> enchantments
     ) {
         this.id = Objects.requireNonNull(
                 id,
@@ -80,7 +105,14 @@ public class ItemDto {
                         itemFlags,
                         "itemFlags must not be null"
                 )
-
+        );
+        this.unbreakable = unbreakable;
+        this.customModelData = customModelData;
+        this.enchantments = List.copyOf(
+                Objects.requireNonNull(
+                        enchantments,
+                        "enchantments must not be null"
+                )
         );
     }
 
@@ -128,4 +160,32 @@ public class ItemDto {
     public List<ItemFlag> getItemFlags() {
         return itemFlags;
     }
+
+    /**
+     * 耐久値を減少させないか。
+     *
+     * @return unbreakable設定
+     */
+    public boolean isUnbreakable() {
+        return unbreakable;
+    }
+
+    /**
+     * CustomModelDataを取得する。
+     *
+     * @return CustomModelData。未指定の場合はnull
+     */
+    public Integer getCustomModelData() {
+        return customModelData;
+    }
+
+    /**
+     * エンチャント一覧を取得する。
+     *
+     * @return 変更不可能なエンチャント一覧
+     */
+    public List<ItemEnchantDto> getEnchantments() {
+        return enchantments;
+    }
+
 }

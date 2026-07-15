@@ -275,25 +275,18 @@ public class YamlItemRepository implements IItemRepository {
                 RegistryAccess.registryAccess()
                         .getRegistry(RegistryKey.ENCHANTMENT);
 
-        final List<ItemEnchantDto> enchantments =
-                new ArrayList<>();
-
-        final Set<NamespacedKey> loadedKeys =
-                new HashSet<>();
+        final List<ItemEnchantDto> enchantments = new ArrayList<>();
+        final Set<NamespacedKey> loadedKeys = new HashSet<>();
 
         for (String enchantmentName : enchantmentsSection.getKeys(false)) {
             final ConfigurationSection enchantmentSection =
-                    enchantmentsSection.getConfigurationSection(
-                            enchantmentName
-                    );
+                    enchantmentsSection.getConfigurationSection(enchantmentName);
 
             if (enchantmentSection == null) {
                 throw new IllegalArgumentException(
                         "Enchantment definition must be a section"
-                                + " / enchantment="
-                                + enchantmentName
-                                + " / itemId="
-                                + itemId
+                                + " / enchantment=" + enchantmentName
+                                + " / itemId=" + itemId
                 );
             }
 
@@ -305,10 +298,8 @@ public class YamlItemRepository implements IItemRepository {
 
             if (!loadedKeys.add(enchantmentKey)) {
                 throw new IllegalArgumentException(
-                        "Duplicate enchantment: "
-                                + enchantmentKey
-                                + " / itemId="
-                                + itemId
+                        "Duplicate enchantment: " + enchantmentKey
+                                + " / itemId=" + itemId
                 );
             }
 
@@ -317,10 +308,8 @@ public class YamlItemRepository implements IItemRepository {
 
             if (enchantment == null) {
                 throw new IllegalArgumentException(
-                        "Unknown enchantment: "
-                                + enchantmentKey
-                                + " / itemId="
-                                + itemId
+                        "Unknown enchantment: " + enchantmentKey
+                                + " / itemId=" + itemId
                 );
             }
 

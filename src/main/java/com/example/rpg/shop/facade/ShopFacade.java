@@ -25,17 +25,17 @@ import org.bukkit.persistence.PersistentDataType;
 public class ShopFacade {
 
     /**
-     * SHOP定義Repository。
+     * SHOP定義Repository
      */
     private final IShopRepository shopRepository;
 
     /**
-     * SHOP GUI描画クラス。
+     * SHOP GUI描画クラス
      */
     private final ShopMenu shopMenu;
 
     /**
-     * SHOP業務処理Service。
+     * SHOP業務処理Service
      */
     private final ShopService shopService;
 

@@ -24,17 +24,17 @@ import java.util.Objects;
  */
 public class ItemBuilder {
     /**
-     * Bukkit ItemStackの最小個数。
+     * Bukkit ItemStackの最小個数
      */
     private static final int MIN_ITEM_AMOUNT = 1;
 
     /**
-     * アイテム定義Repository。
+     * アイテム定義Repository
      */
     private final IItemRepository itemRepository;
 
     /**
-     * RPGアイテム用PDCキー。
+     * RPGアイテム用PDCキー
      */
     private final ItemPdcKeys pdcKeys;
 

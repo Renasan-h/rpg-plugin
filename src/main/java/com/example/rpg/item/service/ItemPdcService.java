@@ -8,12 +8,12 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.Objects;
 
 /**
- * RPGアイテムのPersistentDataContainerを操作するService。
+ * RPGアイテムのPersistentDataContainerを操作するService
  */
 public class ItemPdcService {
 
     /**
-     * RPGアイテム用PDCキー。
+     * RPGアイテム用PDCキー
      */
     private final ItemPdcKeys pdcKeys;
 
@@ -33,7 +33,7 @@ public class ItemPdcService {
      * ItemStackからRPGアイテムIDを取得する。
      *
      * @param itemStack 取得対象アイテム
-     * @return RPGアイテムID。設定されていない場合はnull
+     * @return RPGアイテムID 設定されていない場合はnull
      */
     public String getItemId(final ItemStack itemStack) {
         if (itemStack == null || itemStack.getType().isAir()) {

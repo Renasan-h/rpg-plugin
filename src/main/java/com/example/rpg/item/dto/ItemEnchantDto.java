@@ -5,22 +5,22 @@ import org.bukkit.enchantments.Enchantment;
 import java.util.Objects;
 
 /**
- * RPGアイテムへ設定するエンチャント情報を保持するDTO。
+ * RPGアイテムへ設定するエンチャント情報を保持するDTO
  */
 public class ItemEnchantDto {
 
     /**
-     * 設定するエンチャント。
+     * 設定するエンチャント
      */
     private final Enchantment enchantment;
 
     /**
-     * エンチャントレベル。
+     * エンチャントレベル
      */
     private final int level;
 
     /**
-     * Minecraft標準のレベル制限を無視するか。
+     * Minecraft標準のレベル制限を無視するか
      */
     private final boolean ignoreLevelRestriction;
 

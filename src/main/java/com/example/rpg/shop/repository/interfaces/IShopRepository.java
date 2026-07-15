@@ -7,7 +7,7 @@ import com.example.rpg.shop.dto.ShopItemDto;
 import java.util.List;
 
 /**
- * SHOP定義を管理するRepository。
+ * SHOP定義を管理するRepository
  *
  * <p>
  * config.ymlからSHOP定義を読み込み、DTOへ変換して保持する。

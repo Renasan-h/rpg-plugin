@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 /**
- * SHOP購入履歴を管理するRepository。
+ * SHOP購入履歴を管理するRepository
  *
  * <p>shop-purchases.ymlの読み書きと、プレイヤー別・商品別の購入回数管理を担当する。
  * 購入制限判定に必要な永続データをServiceから分離するためのRepository。</p>

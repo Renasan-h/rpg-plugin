@@ -14,22 +14,22 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class ShopPdcKeys {
 
     /**
-     * カテゴリIDを保存するキー。
+     * カテゴリIDを保存するキー
      */
     private final NamespacedKey shopCategoryKey;
 
     /**
-     * 商品IDを保存するキー。
+     * 商品IDを保存するキー
      */
     private final NamespacedKey shopItemKey;
 
     /**
-     * ページ番号を保存するキー。
+     * ページ番号を保存するキー
      */
     private final NamespacedKey pageKey;
 
     /**
-     * GUIアクションを保存するキー。
+     * GUIアクションを保存するキー
      */
     private final NamespacedKey actionKey;
 

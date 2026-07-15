@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * RPGアイテムの定義情報を保持するDTO。
+ * RPGアイテムの定義情報を保持するDTO
  *
  * <p>
  * アイテム自体のMaterial・表示名・Loreのみを保持し、
@@ -16,46 +16,46 @@ import java.util.Objects;
  */
 public class ItemDto {
     /**
-     * アイテムを一意に識別するID。
+     * アイテムを一意に識別するID
      */
     private final String id;
 
     /**
-     * Minecraft上で使用するMaterial。
+     * Minecraft上で使用するMaterial
      */
     private final Material material;
 
     /**
-     * MiniMessage形式の表示名。
+     * MiniMessage形式の表示名
      */
     private final String displayName;
 
     /**
-     * MiniMessage形式のLore。
+     * MiniMessage形式のLore
      */
     private final List<String> lore;
 
     /**
-     * ItemFlags。
+     * ItemFlags
      */
     private final List<ItemFlag> itemFlags;
 
     /**
-     * 耐久値を減少させないか。
+     * 耐久値を減少させないか
      */
     private final boolean unbreakable;
 
     /**
-     * リソースパックのモデル選択に使用するCustomModelData。
+     * リソースパックのモデル選択に使用するCustomModelData
      *
      * <p>
-     * 未指定の場合はnull。
+     * 未指定の場合はnull
      * </p>
      */
     private final Integer customModelData;
 
     /**
-     * アイテムへ設定するエンチャント一覧。
+     * アイテムへ設定するエンチャント一覧
      */
     private final List<ItemEnchantDto> enchantments;
 
@@ -68,7 +68,7 @@ public class ItemDto {
      * @param lore            MiniMessage形式のLore
      * @param itemFlags       ItemFlag一覧
      * @param unbreakable     耐久値を減少させない場合true
-     * @param customModelData CustomModelData。未指定の場合はnull
+     * @param customModelData CustomModelData 未指定の場合はnull
      * @param enchantments    エンチャント一覧
      * @throws NullPointerException 引数がnullの場合
      */

@@ -8,7 +8,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 public class ShopListener implements Listener {
 
     /**
-     * SHOP機能の入口。
+     * SHOP機能の入口
      */
     private final ShopFacade shopFacade;
 

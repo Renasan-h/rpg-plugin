@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 /**
- * SHOP GUIの生成と表示を担当するMenu。
+ * SHOP GUIの生成と表示を担当するMenu
  *
  * <p>
  * Inventory生成、アイコン生成、Lore生成のみを担当し、
@@ -35,41 +35,41 @@ import java.util.stream.IntStream;
 public class ShopMenu {
 
     /**
-     * Minecraftのインベントリ1行分のスロット数。
+     * Minecraftのインベントリ1行分のスロット数
      */
     private static final int INVENTORY_ROW_SIZE = 9;
 
     /**
-     * 作成可能なインベントリの最小サイズ。
+     * 作成可能なインベントリの最小サイズ
      */
     private static final int MIN_INVENTORY_SIZE = 9;
 
     /**
-     * 作成可能なインベントリの最大サイズ。
+     * 作成可能なインベントリの最大サイズ
      */
     private static final int MAX_INVENTORY_SIZE = 54;
 
     /**
-     * 空きスロットを装飾するアイテム。
+     * 空きスロットを装飾するアイテム
      */
     private static final Material DECORATION_MATERIAL =
             Material.GRAY_STAINED_GLASS_PANE;
 
     /**
-     * 商品一覧画面タイトルの区切り。
+     * 商品一覧画面タイトルの区切り
      */
     private static final String ITEM_TITLE_SEPARATOR =
             " <gray>-</gray> ";
     /**
-     * ページ操作領域として予約する行数。
+     * ページ操作領域として予約する行数
      */
     private static final int NAVIGATION_ROW_SIZE = 9;
     /**
-     * 前ページボタンの最終行内オフセット。
+     * 前ページボタンの最終行内オフセット
      */
     private static final int PREVIOUS_PAGE_OFFSET = 0;
     /**
-     * ページ情報の最終行内オフセット。
+     * ページ情報の最終行内オフセット
      */
     private static final int PAGE_INDICATOR_OFFSET = 4;
     /**

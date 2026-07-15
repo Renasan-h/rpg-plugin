@@ -15,7 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * SHOPに関連する業務処理を担当するService。
+ * SHOPに関連する業務処理を担当するService
  *
  * <p>購入・売却・COMMAND商品実行・購入履歴更新など、
  * SHOPユースケースに関する処理を集約する。</p>
@@ -40,7 +40,7 @@ public class ShopService {
     private final IMoneyRepository moneyRepository;
 
     /**
-     * RPGアイテム定義Repository。
+     * RPGアイテム定義Repository
      */
     private final IItemRepository itemRepository;
 
@@ -65,12 +65,12 @@ public class ShopService {
      * @param itemRepository         RPGアイテム定義Repository
      */
     public ShopService(
-        final IShopRepository shopRepository,
-        final IMoneyRepository moneyRepository,
-        final IShopPurchaseRepository shopPurchaseRepository,
-        final ItemPdcService itemPdcService,
-        final ItemBuilder itemBuilder,
-        final IItemRepository itemRepository
+            final IShopRepository shopRepository,
+            final IMoneyRepository moneyRepository,
+            final IShopPurchaseRepository shopPurchaseRepository,
+            final ItemPdcService itemPdcService,
+            final ItemBuilder itemBuilder,
+            final IItemRepository itemRepository
     ) {
         this.shopRepository = shopRepository;
         this.moneyRepository = moneyRepository;
@@ -137,8 +137,8 @@ public class ShopService {
         }
 
         int currentCount = shopPurchaseRepository.findPurchaseCount(
-            player.getUniqueId(),
-            shopItem.getId()
+                player.getUniqueId(),
+                shopItem.getId()
         );
 
         return currentCount >= shopItem.getLimit();
@@ -152,14 +152,14 @@ public class ShopService {
      */
     private void sendLimitReachedMessage(Player player, ShopItemDto shopItem) {
         int currentCount = shopPurchaseRepository.findPurchaseCount(
-            player.getUniqueId(),
-            shopItem.getId()
+                player.getUniqueId(),
+                shopItem.getId()
         );
 
         player.sendMessage(MessageUtil.red("この商品は購入上限に達しています。"));
         player.sendMessage(MessageUtil.mm(
-            "<gray>購入済み: </gray><yellow>" + currentCount + "</yellow>" +
-                "<gray> / 上限: </gray><yellow>" + shopItem.getLimit() + "</yellow>"
+                "<gray>購入済み: </gray><yellow>" + currentCount + "</yellow>" +
+                        "<gray> / 上限: </gray><yellow>" + shopItem.getLimit() + "</yellow>"
         ));
     }
 
@@ -185,8 +185,8 @@ public class ShopService {
 
         player.sendMessage(MessageUtil.red("所持金が足りません。"));
         player.sendMessage(MessageUtil.mm(
-            "<gray>必要: </gray><gold>" + shopItem.getPrice() + "G</gold>" +
-                "<gray> / 現在: </gray><gold>" + currentMoney + "G</gold>"
+                "<gray>必要: </gray><gold>" + shopItem.getPrice() + "G</gold>" +
+                        "<gray> / 現在: </gray><gold>" + currentMoney + "G</gold>"
         ));
     }
 
@@ -226,12 +226,12 @@ public class ShopService {
      */
     private void sendPurchaseCompletedMessage(Player player, ShopItemDto shopItem) {
         player.sendMessage(
-            MessageUtil.mm("<yellow>購入しました: </yellow>")
-                .append(getItemDisplayName(shopItem))
-                .append(MessageUtil.mm(
-                    " <gray>x" + shopItem.getAmount() + "</gray>"))
-                .append(MessageUtil.mm(
-                    " <gray>-" + shopItem.getPrice() + "G</gray>"))
+                MessageUtil.mm("<yellow>購入しました: </yellow>")
+                        .append(getItemDisplayName(shopItem))
+                        .append(MessageUtil.mm(
+                                " <gray>x" + shopItem.getAmount() + "</gray>"))
+                        .append(MessageUtil.mm(
+                                " <gray>-" + shopItem.getPrice() + "G</gray>"))
         );
     }
 
@@ -371,17 +371,17 @@ public class ShopService {
      * @param price    売却金額
      */
     private void sendSellCompletedMessage(
-        final Player player,
-        final ShopItemDto shopItem,
-        final int amount,
-        final int price
+            final Player player,
+            final ShopItemDto shopItem,
+            final int amount,
+            final int price
     ) {
         player.sendMessage(
-            MessageUtil.mm("<yellow>売却しました: </yellow>")
-                .append(getItemDisplayName(shopItem)
-                    .append(MessageUtil.mm(" <gray>x" + amount + "</gray>"))
-                    .append(MessageUtil.mm(" <gold>+" + price + "G</gold>"))
-                )
+                MessageUtil.mm("<yellow>売却しました: </yellow>")
+                        .append(getItemDisplayName(shopItem)
+                                .append(MessageUtil.mm(" <gray>x" + amount + "</gray>"))
+                                .append(MessageUtil.mm(" <gold>+" + price + "G</gold>"))
+                        )
         );
     }
 
@@ -392,7 +392,7 @@ public class ShopService {
      */
     private void sendEmptyHandMessage(final Player player) {
         player.sendMessage(
-            MessageUtil.red("売却するアイテムを手に持ってください。")
+                MessageUtil.red("売却するアイテムを手に持ってください。")
         );
     }
 
@@ -404,9 +404,9 @@ public class ShopService {
     private void sendInsufficientItemAmountMessage(final Player player, int amount) {
         final int currentAmount = player.getInventory().getItemInMainHand().getAmount();
         player.sendMessage(MessageUtil.mm(
-            "<red>手持ちアイテムの個数が不足しています。</red>"
-                + " <gray>指定: " + amount
-                + " / 所持: " + currentAmount + "</gray>"
+                "<red>手持ちアイテムの個数が不足しています。</red>"
+                        + " <gray>指定: " + amount
+                        + " / 所持: " + currentAmount + "</gray>"
         ));
     }
 
@@ -417,7 +417,7 @@ public class ShopService {
      */
     private void sendCannotSellMessage(final Player player) {
         player.sendMessage(
-            MessageUtil.red("このアイテムは売却できません。")
+                MessageUtil.red("このアイテムは売却できません。")
         );
     }
 
@@ -432,8 +432,8 @@ public class ShopService {
             String parsedCommand = command.replace(ShopServiceConst.REP_COMMAND_PLAYER, player.getName());
 
             player.getServer().dispatchCommand(
-                player.getServer().getConsoleSender(),
-                parsedCommand
+                    player.getServer().getConsoleSender(),
+                    parsedCommand
             );
         }
     }
@@ -450,7 +450,7 @@ public class ShopService {
 
         if (item == null) {
             throw new IllegalArgumentException(
-                "Item definition not found: " + shopItem.getItemId()
+                    "Item definition not found: " + shopItem.getItemId()
             );
         }
 

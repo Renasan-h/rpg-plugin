@@ -5,7 +5,7 @@ import com.example.rpg.item.dto.ItemDto;
 import java.util.List;
 
 /**
- * RPGアイテム定義を管理するRepository。
+ * RPGアイテム定義を管理するRepository
  *
  * <p>
  * アイテム定義の保存形式を呼び出し側から隠蔽し、
@@ -23,7 +23,7 @@ public interface IItemRepository {
      * アイテムIDから定義を取得する。
      *
      * @param itemId アイテムID
-     * @return アイテム定義。存在しない場合はnull
+     * @return アイテム定義 存在しない場合はnull
      */
     ItemDto findById(String itemId);
 

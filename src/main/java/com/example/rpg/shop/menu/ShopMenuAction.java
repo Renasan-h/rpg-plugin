@@ -6,12 +6,12 @@ package com.example.rpg.shop.menu;
 public enum ShopMenuAction {
 
     /**
-     * 前ページを表示する。
+     * 前ページを表示する
      */
     PREVIOUS_PAGE,
 
     /**
-     * 次ページを表示する。
+     * 次ページを表示する
      */
     NEXT_PAGE,
 

@@ -17,7 +17,7 @@ import org.bukkit.inventory.ItemFlag;
 import java.util.*;
 
 /**
- * items.ymlからRPGアイテム定義を読み込むRepository。
+ * items.ymlからRPGアイテム定義を読み込むRepository
  *
  * <p>
  * YAMLの構造解析とDTOへの変換を担当する。
@@ -27,17 +27,17 @@ import java.util.*;
  */
 public class YamlItemRepository implements IItemRepository {
     /**
-     * アイテム定義のルートセクション名。
+     * アイテム定義のルートセクション名
      */
     private static final String ITEMS_SECTION_PATH = "items";
 
     /**
-     * items.ymlの読み込み結果。
+     * items.ymlの読み込み結果
      */
     private final YamlConfiguration config;
 
     /**
-     * 読み込み済みアイテム定義。
+     * 読み込み済みアイテム定義
      *
      * <p>
      * キーはアイテムID、値はアイテム定義とする。
@@ -152,7 +152,7 @@ public class YamlItemRepository implements IItemRepository {
     }
 
     /**
-     * YAMLからItemFlag一覧を読み込む。
+     * YAMLからItemFlag一覧を読み込む
      *
      * <p>
      * 文字列からBukkitのItemFlagへの変換はRepository内で行い、
@@ -209,7 +209,7 @@ public class YamlItemRepository implements IItemRepository {
      *
      * @param itemId  アイテムID
      * @param section アイテム設定セクション
-     * @return CustomModelData。未指定の場合はnull
+     * @return CustomModelData 未指定の場合はnull
      * @throws IllegalArgumentException 数値以外または有限値でない場合
      */
     private Integer loadCustomModelData(

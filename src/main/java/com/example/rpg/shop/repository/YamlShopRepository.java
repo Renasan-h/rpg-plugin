@@ -13,7 +13,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.util.*;
 
 /**
- * SHOP定義を管理するRepository。
+ * SHOP定義を管理するRepository
  *
  * <p>
  * config.ymlからSHOP定義を読み込み、DTOへ変換して保持する。

@@ -5,7 +5,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * SHOP商品一覧画面を識別するためのInventoryHolder。
+ * SHOP商品一覧画面を識別するためのInventoryHolder
  * <p>
  * カテゴリ別商品画面を保持
  * クリック処理ではこのcategoryIdを使って購入対象カテゴリを特定する
@@ -14,12 +14,12 @@ import org.jetbrains.annotations.NotNull;
 public class ItemMenuHolder implements InventoryHolder {
 
     /**
-     * 表示中カテゴリID。
+     * 表示中カテゴリID
      */
     private final String categoryId;
 
     /**
-     * 表示中ページ番号。
+     * 表示中ページ番号
      */
     private final int page;
 

@@ -28,7 +28,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
     private static final String PERMISSION = "rpg.admin.shop";
 
     /**
-     * 購入回数管理Service。
+     * 購入回数管理Service
      */
     private final IShopPurchaseRepository shopPurchaseRepository;
 

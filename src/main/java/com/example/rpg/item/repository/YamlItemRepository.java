@@ -1,10 +1,7 @@
 package com.example.rpg.item.repository;
 
 
-import com.example.rpg.common.exception.ConfigurationException;
-import com.example.rpg.common.exception.InvalidPropertyTypeException;
-import com.example.rpg.common.exception.InvalidPropertyValueException;
-import com.example.rpg.common.exception.UnknownConfigurationValueException;
+import com.example.rpg.common.exception.*;
 import com.example.rpg.item.dto.ItemAttributeDto;
 import com.example.rpg.item.dto.ItemDto;
 import com.example.rpg.item.dto.ItemEnchantDto;
@@ -497,36 +494,39 @@ public class YamlItemRepository implements IItemRepository {
             attributes.add(loadAttribute(
                     itemId,
                     key,
-                    section
+                    value
             ));
 
         }
 
-        return attributes;
+        return List.copyOf(attributes);
     }
 
     /**
      * AttributeModifierを読み込む。
      *
-     * @param itemId  アイテムID
-     * @param key     Attributeキー
-     * @param section Attribute設定
+     * @param itemId     アイテムID
+     * @param modifierId AttributeName
+     * @param section    Attribute設定
      * @return AttributeModifier情報
      */
     private ItemAttributeDto loadAttribute(
             final String itemId,
-            final String key,
+            final String modifierId,
             final ConfigurationSection section
     ) {
-        final Attribute attribute = parseAttribute(itemId, key);
-        final double amount = section.getDouble("amount");
+        final String attributeName = requireString(section, "attribute", itemId, modifierId);
+        final Attribute attribute = parseAttribute(itemId, modifierId, attributeName);
+        final double amount = requireDouble(section, "amount", itemId, modifierId);
+        final String operationName = requireString(section, "operation", itemId, modifierId);
         final AttributeModifier.Operation operation =
-                parseOperation(itemId, section.getString("operation"));
-        final EquipmentSlotGroup slotGroup = parseSlopGroup(
-                itemId, section.getString("slop")
-        );
+                parseOperation(itemId, modifierId, operationName);
+        final String slotGroupName = requireString(section, "slot", itemId, modifierId);
+        final EquipmentSlotGroup slotGroup = parseSlotGroup(
+                itemId, modifierId, slotGroupName);
 
         return new ItemAttributeDto(
+                modifierId,
                 attribute,
                 amount,
                 operation,
@@ -535,28 +535,46 @@ public class YamlItemRepository implements IItemRepository {
     }
 
     /**
-     * Attributeを取得する。
+     * Attribute名をBukkitのAttributeへ変換する。
+     *
+     * @param itemId     アイテムID
+     * @param modifierId Attribute名
+     * @return 変換したAttribute
+     * @throws InvalidPropertyValueException      Attribute名をNamespacedKeyへ変換できない場合
+     * @throws UnknownConfigurationValueException 対応するAttributeが存在しない場合
      */
     private Attribute parseAttribute(
             final String itemId,
-            final String value
+            final String modifierId,
+            final String attributeName
     ) {
-        final Registry<Attribute> registry =
-                RegistryAccess.registryAccess().getRegistry(RegistryKey.ATTRIBUTE);
+        final String normalizedName =
+                attributeName.toLowerCase(Locale.ROOT);
 
-        final NamespacedKey key =
-                NamespacedKey.minecraft(
-                        value.toUpperCase(Locale.ROOT)
-                );
+        final NamespacedKey attributeKey =
+                NamespacedKey.fromString(normalizedName);
+
+        if (attributeKey == null) {
+            throw new InvalidPropertyValueException(
+                    itemId,
+                    "attributes." + modifierId + ".attribute",
+                    attributeName,
+                    "must be a valid namespaced key"
+            );
+        }
+
+        final Registry<Attribute> attributeRegistry =
+                RegistryAccess.registryAccess()
+                        .getRegistry(RegistryKey.ATTRIBUTE);
 
         final Attribute attribute =
-                registry.get(key);
+                attributeRegistry.get(attributeKey);
 
         if (attribute == null) {
             throw new UnknownConfigurationValueException(
                     itemId,
-                    "Attribute",
-                    value
+                    "attributes." + modifierId + ".attribute",
+                    attributeName
             );
         }
 
@@ -564,57 +582,71 @@ public class YamlItemRepository implements IItemRepository {
     }
 
     /**
-     * Operationを取得する。
+     * Operation名をAttributeModifier.Operationへ変換する。
+     *
+     * @param itemId        アイテムID
+     * @param attributeName Attribute名
+     * @param operationName Operation名
+     * @return AttributeModifier.Operation
+     * @throws InvalidEnumValueException Operationへ変換できない場合
      */
     private AttributeModifier.Operation parseOperation(
             final String itemId,
-            final String value
+            final String attributeName,
+            final String operationName
     ) {
         try {
             return AttributeModifier.Operation.valueOf(
-                    value.toUpperCase(Locale.ROOT));
+                    operationName.toUpperCase(Locale.ROOT)
+            );
         } catch (IllegalArgumentException ex) {
-            throw new UnknownConfigurationValueException(
+            throw new InvalidEnumValueException(
                     itemId,
-                    "Operation",
-                    value
+                    "attributes." + attributeName + ".operation",
+                    operationName,
+                    AttributeModifier.Operation.class
             );
         }
     }
 
     /**
-     * EquipmentSlotGroupを取得する。
-     */
-    private EquipmentSlotGroup parseSlopGroup(
-            final String itemId,
-            final String value
-    ) {
-        try {
-            return EquipmentSlotGroup.getByName(
-                    value.toLowerCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            throw new UnknownConfigurationValueException(
-                    itemId,
-                    "slot group",
-                    value
-            );
-        }
-    }
-
-    /**
-     * 必須文字列を設定セクションから取得する。
+     * EquipmentSlotGroup名をBukkitのEquipmentSlotGroupへ変換する。
      *
-     * <p>
-     * 未設定値を後続処理へnullとして渡さず、
-     * 設定ファイル上の問題として読み込み時に検出する。
-     * </p>
+     * @param itemId        アイテムID
+     * @param attributeName Attribute名
+     * @param slotGroupName EquipmentSlotGroup名
+     * @return EquipmentSlotGroup
+     * @throws UnknownConfigurationValueException 存在しないSlotGroupの場合
+     */
+    private EquipmentSlotGroup parseSlotGroup(
+            final String itemId,
+            final String attributeName,
+            final String slotGroupName
+    ) {
+        final EquipmentSlotGroup slotGroup =
+                EquipmentSlotGroup.getByName(
+                        slotGroupName.toLowerCase(Locale.ROOT)
+                );
+
+        if (slotGroup == null) {
+            throw new UnknownConfigurationValueException(
+                    itemId,
+                    "attributes." + attributeName + ".slot",
+                    slotGroupName
+            );
+        }
+
+        return slotGroup;
+    }
+
+    /**
+     * 必須文字列を取得する。
      *
      * @param section       読み込み対象セクション
-     * @param path          設定キー
+     * @param path          キー
      * @param itemId        アイテムID
      * @param attributeName Attribute名
      * @return 空ではない文字列
-     * @throws IllegalArgumentException 未設定、空文字、文字列以外の場合
      */
     private String requireString(
             final ConfigurationSection section,
@@ -622,13 +654,33 @@ public class YamlItemRepository implements IItemRepository {
             final String itemId,
             final String attributeName
     ) {
+        final String propertyPath =
+                "attributes." + attributeName + "." + path;
+
+        if (!section.isSet(path)) {
+            throw new RequiredPropertyException(
+                    itemId,
+                    propertyPath
+            );
+        }
+
         final Object rawValue = section.get(path);
 
-        if (!(rawValue instanceof String value) || value.isBlank()) {
-            throw new IllegalArgumentException(
-                    "'" + path + "' must be a non-blank string"
-                            + " / attribute=" + attributeName
-                            + " / itemId=" + itemId
+        if (!(rawValue instanceof String value)) {
+            throw new InvalidPropertyTypeException(
+                    itemId,
+                    propertyPath,
+                    "string",
+                    rawValue
+            );
+        }
+
+        if (value.isBlank()) {
+            throw new InvalidPropertyValueException(
+                    itemId,
+                    propertyPath,
+                    value,
+                    "must not be blank"
             );
         }
 
@@ -636,43 +688,49 @@ public class YamlItemRepository implements IItemRepository {
     }
 
     /**
-     * 必須の有限な数値を設定セクションから取得する。
-     *
-     * <p>
-     * ConfigurationSection#getDoubleは未設定や型不正時に
-     * 0を返す可能性があるため、元の値を直接検証する。
-     * </p>
+     * 必須の有限な数値を取得する。
      *
      * @param section       読み込み対象セクション
-     * @param path          設定キー
+     * @param path          キー
      * @param itemId        アイテムID
      * @param attributeName Attribute名
      * @return 有限なdouble値
-     * @throws IllegalArgumentException 未設定、数値以外、有限値でない場合
      */
-    private double requiredDouble(
+    private double requireDouble(
             final ConfigurationSection section,
             final String path,
             final String itemId,
             final String attributeName
     ) {
+        final String propertyPath =
+                "attributes." + attributeName + "." + path;
+
+        if (!section.isSet(path)) {
+            throw new RequiredPropertyException(
+                    itemId,
+                    propertyPath
+            );
+        }
+
         final Object rawValue = section.get(path);
 
         if (!(rawValue instanceof Number number)) {
             throw new InvalidPropertyTypeException(
                     itemId,
-                    "attributes." + attributeName + "." + path,
-                    "number"
+                    propertyPath,
+                    "number",
+                    rawValue
             );
         }
 
         final double value = number.doubleValue();
 
         if (!Double.isFinite(value)) {
-            throw new InvalidPropertyTypeException(
+            throw new InvalidPropertyValueException(
                     itemId,
-                    "attributes." + attributeName + "." + path,
-                    "Infinite"
+                    propertyPath,
+                    rawValue,
+                    "must be a finite number"
             );
         }
 

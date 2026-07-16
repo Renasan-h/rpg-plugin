@@ -12,6 +12,11 @@ import java.util.Objects;
 public class ItemAttributeDto {
 
     /**
+     * AttributeModifier定義を識別するID。
+     */
+    private final String id;
+
+    /**
      * 対象となるAttribute
      */
     private final Attribute attribute;
@@ -34,17 +39,24 @@ public class ItemAttributeDto {
     /**
      * ItemAttributeを生成する。
      *
+     * @param id        AttributeModifier定義ID
      * @param attribute 対象Attribute
      * @param amount    能力値変更量
      * @param operation 変更方法
      * @param slotGroup 効果を発揮する装備部位
      */
     public ItemAttributeDto(
+            final String id,
             final Attribute attribute,
             final double amount,
             final AttributeModifier.Operation operation,
             final EquipmentSlotGroup slotGroup
     ) {
+        this.id = Objects.requireNonNull(
+                id,
+                "id must not be null"
+        );
+
         this.attribute = Objects.requireNonNull(
                 attribute,
                 "attribute must not be null"
@@ -58,6 +70,15 @@ public class ItemAttributeDto {
                 "slotGroup must not be null"
         );
         this.amount = amount;
+    }
+
+    /**
+     * AttributeModifier定義IDを取得する。
+     *
+     * @return AttributeModifier定義ID
+     */
+    public String getId() {
+        return id;
     }
 
     /**

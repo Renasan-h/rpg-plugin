@@ -4,6 +4,7 @@ main: com.example.rpg.RpgPlugin
 api-version: "1.21"
 author: Renasan.devs
 
+# コマンド設定
 commands:
   money:
     description: 所持金を確認します
@@ -29,6 +30,7 @@ commands:
     usage: /devhelp <hand> <amount>
     permission: rpg.admin
 
+# 権限設定
 permissions:
   rpg.admin:
     description: RPG管理コマンドを使用できます

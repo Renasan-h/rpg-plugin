@@ -1,0 +1,3 @@
+# サーバーコンフィグを常に上書きするかの設定
+server-config:
+  yml-config-replace: true

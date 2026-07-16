@@ -1,17 +1,22 @@
 package com.example.rpg.item;
 
 import com.example.rpg.common.message.MessageUtil;
+import com.example.rpg.item.dto.ItemAttributeDto;
 import com.example.rpg.item.dto.ItemDto;
 import com.example.rpg.item.dto.ItemEnchantDto;
 import com.example.rpg.item.pdc.ItemPdcKeys;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
 import net.kyori.adventure.text.Component;
+import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -39,14 +44,21 @@ public class ItemBuilder {
     private final ItemPdcKeys pdcKeys;
 
     /**
+     * NamespacedKey生成に使用するプラグインインスタンス。
+     */
+    private final JavaPlugin plugin;
+
+    /**
      * ItemBuilderを生成する。
      *
      * @param itemRepository アイテム定義Repository
      * @param pdcKeys        RPGアイテム用PDCキー
+     * @param plugin         プラグインインスタンス
      */
     public ItemBuilder(
             final IItemRepository itemRepository,
-            final ItemPdcKeys pdcKeys
+            final ItemPdcKeys pdcKeys,
+            final JavaPlugin plugin
     ) {
         this.itemRepository = Objects.requireNonNull(
                 itemRepository,
@@ -56,6 +68,11 @@ public class ItemBuilder {
         this.pdcKeys = Objects.requireNonNull(
                 pdcKeys,
                 "pdcKeys must not be null"
+        );
+
+        this.plugin = Objects.requireNonNull(
+                plugin,
+                "plugin must not be null"
         );
     }
 
@@ -128,12 +145,14 @@ public class ItemBuilder {
 
         final ItemMeta meta = itemStack.getItemMeta();
 
+        // アイテムの構成情報を適用する
         applyDisplayName(meta, item);
         applyLore(meta, item);
         applyItemFlags(meta, item);
         applyUnbreakable(meta, item);
         applyCustomModelData(meta, item);
         applyEnchantments(meta, item);
+        applyAttributes(meta, item);
         applyPersistentData(meta, item);
 
         itemStack.setItemMeta(meta);
@@ -262,6 +281,50 @@ public class ItemBuilder {
                     enchant.getLevel(),
                     enchant.isIgnoreLevelRestriction()
             );
+        }
+    }
+
+    /**
+     * アイテム定義に含まれるAttributeModifierをItemMetaへ適用する。
+     *
+     * <p>
+     * AttributeModifierの識別キーはアイテムIDとAttributeの連番から生成し、
+     * 同じアイテム定義では常に同一のキーを使用する。
+     * </p>
+     *
+     * @param meta ItemMeta
+     * @param item アイテム定義
+     */
+    private void applyAttributes(
+            final ItemMeta meta,
+            final ItemDto item
+    ) {
+        final List<ItemAttributeDto> attributes = item.getAttributes();
+
+        for (int index = 0; index < attributes.size(); index++) {
+            final ItemAttributeDto attribute = attributes.get(index);
+
+            // item/xxxxxx/attribute/[index] の形式で作成する
+            final NamespacedKey modifierKey =
+                    new NamespacedKey(
+                            plugin,
+                            "item/"
+                                    + item.getId().toLowerCase(Locale.ROOT)
+                                    + "/attribute/"
+                                    + index
+                    );
+
+            final AttributeModifier modifier =
+                    new AttributeModifier(
+                            modifierKey,
+                            attribute.getAmount(),
+                            attribute.getOperation(),
+                            attribute.getSlotGroup()
+                    );
+
+            meta.addAttributeModifier(
+                    attribute.getAttribute(),
+                    modifier);
         }
     }
 }

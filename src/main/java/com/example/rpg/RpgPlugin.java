@@ -24,6 +24,7 @@ import com.example.rpg.shop.repository.YamlShopRepository;
 import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.shop.service.ShopService;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -166,7 +167,8 @@ public class RpgPlugin extends JavaPlugin implements Listener {
 
         this.itemBuilder = new ItemBuilder(
                 itemRepository,
-                itemPdcKeys
+                itemPdcKeys,
+                this
         );
     }
 
@@ -245,14 +247,19 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      *
      * @param fileName コピー対象ファイル名
      */
-    private void copyResourceIfAbsent(String fileName) {
+    private void copyResourceIfAbsent(String fileName, boolean replace) {
         File file = new File(getDataFolder(), fileName);
 
-        if (file.exists()) {
-            return;
-        }
+        // config.ymlの上書きフラグを確認する
+        if (replace) {
+            saveResource(fileName, true);
+        } else {
+            if (file.exists()) {
+                return;
+            }
 
-        saveResource(fileName, false);
+            saveResource(fileName, false);
+        }
     }
 
     /**
@@ -293,10 +300,12 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     private void prepareResourceFiles() {
         saveDefaultConfig();
 
-        copyResourceIfAbsent("money.yml");
-        copyResourceIfAbsent("shop-purchases.yml");
-        copyResourceIfAbsent("shop.yml");
-        copyResourceIfAbsent("items.yml");
-    }
+        FileConfiguration config = getConfig();
+        boolean isFileOverWrite = config.getBoolean("server-config.yml-config-replace", false);
 
+        copyResourceIfAbsent("money.yml", isFileOverWrite);
+        copyResourceIfAbsent("shop-purchases.yml", isFileOverWrite);
+        copyResourceIfAbsent("shop.yml", isFileOverWrite);
+        copyResourceIfAbsent("items.yml", isFileOverWrite);
+    }
 }

@@ -12,7 +12,6 @@ import org.bukkit.Registry;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
 
@@ -41,27 +40,19 @@ public class YamlEnchantmentRepository implements IEnchantmentRepository {
     private final Map<String, ItemEnchantmentDto> enchantments =
             new LinkedHashMap<>();
 
-    private final JavaPlugin plugin;
-
     /**
      * YAML形式のItemEnchantmentRepositoryを生成する。
      *
      * @param config items.ymlの読み込み結果
      * @throws NullPointerException configがnullの場合
      */
-    public YamlEnchantmentRepository(final JavaPlugin plugin, final YamlConfiguration config) {
+    public YamlEnchantmentRepository(final YamlConfiguration config) {
         this.config = Objects.requireNonNull(
                 config,
                 "config must not be null"
         );
-        this.plugin = plugin;
 
         load();
-
-        this.plugin.getLogger().warning("loading enchantments");
-        for (ItemEnchantmentDto value : enchantments.values()) {
-            this.plugin.getLogger().warning("value: " + value.getEnchantment().getKey());
-        }
     }
 
     /**
@@ -86,7 +77,6 @@ public class YamlEnchantmentRepository implements IEnchantmentRepository {
                         .getRegistry(RegistryKey.ENCHANTMENT);
 
         for (String key : enchantmentsSection.getKeys(false)) {
-            plugin.getLogger().warning("[loading Section] " + key);
             final ConfigurationSection enchantmentSection =
                     enchantmentsSection.getConfigurationSection(key);
 

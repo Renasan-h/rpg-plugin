@@ -67,6 +67,11 @@ shop:
           slot: 16
           price: 50
           amount: 1
+        potion_dev1:
+          itemId: potion_dev1
+          slot: 16
+          price: 50
+          amount: 1
 
     special:
       slot: 28

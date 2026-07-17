@@ -158,7 +158,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 YamlConfiguration.loadConfiguration(new File(getDataFolder(), "items.yml"))
         );
         this.attributeRepository = new YamlAttributeRepository(
-                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "attirbutes.yml")));
+                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "attributes.yml")));
         this.enchantmentRepository = new YamlEnchantmentRepository(this,
                 YamlConfiguration.loadConfiguration(new File(getDataFolder(), "enchantments.yml")));
         this.effectRepository = new YamlEffectRepository(

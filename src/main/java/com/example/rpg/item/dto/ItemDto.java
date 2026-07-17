@@ -57,12 +57,17 @@ public class ItemDto {
     /**
      * アイテムへ設定するエンチャント一覧
      */
-    private final List<ItemEnchantDto> enchantments;
+    private final List<String> enchantments;
 
     /**
      * アイテムへ付与するAttributeModifier一覧。
      */
-    private final List<ItemAttributeDto> attributes;
+    private final List<String> attributes;
+
+    /**
+     * ポーションへ付与する効果一覧
+     */
+    private final List<String> effects;
 
     /**
      * ItemDtoを生成する。
@@ -76,6 +81,7 @@ public class ItemDto {
      * @param customModelData CustomModelData 未指定の場合はnull
      * @param enchantments    エンチャント一覧
      * @param attributes      アイテムへ付与するArributeModifierの一覧
+     * @param effects         ポーションへ付与する効果一覧
      * @throws NullPointerException 引数がnullの場合
      */
     public ItemDto(
@@ -86,8 +92,9 @@ public class ItemDto {
             final List<ItemFlag> itemFlags,
             final boolean unbreakable,
             final Integer customModelData,
-            final List<ItemEnchantDto> enchantments,
-            final List<ItemAttributeDto> attributes
+            final List<String> enchantments,
+            final List<String> attributes,
+            final List<String> effects
 
     ) {
         this.id = Objects.requireNonNull(
@@ -125,6 +132,10 @@ public class ItemDto {
         this.attributes = Objects.requireNonNull(
                 attributes,
                 "attributes must not be null"
+        );
+        this.effects = Objects.requireNonNull(
+                effects,
+                "effects must not be null"
         );
     }
 
@@ -196,7 +207,7 @@ public class ItemDto {
      *
      * @return 変更不可能なエンチャント一覧
      */
-    public List<ItemEnchantDto> getEnchantments() {
+    public List<String> getEnchantments() {
         return enchantments;
     }
 
@@ -205,8 +216,17 @@ public class ItemDto {
      *
      * @return AttributeModifier一覧
      */
-    public List<ItemAttributeDto> getAttributes() {
+    public List<String> getAttributes() {
         return attributes;
+    }
+
+    /**
+     * ポーションへ付与する効果一覧を付与する。
+     *
+     * @return Effect一覧
+     */
+    public List<String> getEffects() {
+        return effects;
     }
 
 }

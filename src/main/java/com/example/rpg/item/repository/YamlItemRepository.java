@@ -1,22 +1,14 @@
 package com.example.rpg.item.repository;
 
 
-import com.example.rpg.common.exception.*;
-import com.example.rpg.item.dto.ItemAttributeDto;
+import com.example.rpg.common.exception.ConfigurationException;
+import com.example.rpg.common.exception.InvalidPropertyTypeException;
+import com.example.rpg.common.exception.UnknownConfigurationValueException;
 import com.example.rpg.item.dto.ItemDto;
-import com.example.rpg.item.dto.ItemEnchantDto;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
-import io.papermc.paper.registry.RegistryAccess;
-import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Registry;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 
 import java.util.*;
@@ -141,11 +133,14 @@ public class YamlItemRepository implements IItemRepository {
                 section
         );
 
-        final List<ItemEnchantDto> enchantments =
+        final List<String> enchantments =
                 loadEnchantments(itemId, section);
 
-        final List<ItemAttributeDto> attributes =
+        final List<String> attributes =
                 loadAttributes(itemId, section);
+
+        final List<String> effects =
+                loadEffects(itemId, section);
 
         return new ItemDto(
                 itemId,
@@ -156,7 +151,8 @@ public class YamlItemRepository implements IItemRepository {
                 unbreakable,
                 customModelData,
                 enchantments,
-                attributes
+                attributes,
+                effects
         );
     }
 
@@ -270,471 +266,60 @@ public class YamlItemRepository implements IItemRepository {
      * @return エンチャント一覧
      * @throws IllegalArgumentException 設定値が不正な場合
      */
-    private List<ItemEnchantDto> loadEnchantments(
+    private List<String> loadEnchantments(
             final String itemId,
             final ConfigurationSection section
     ) {
-        final ConfigurationSection enchantmentsSection =
-                section.getConfigurationSection("enchantments");
+        final List<String> enchantments =
+                section.getStringList("enchantments");
 
-        if (enchantmentsSection == null) {
+        if (enchantments.isEmpty()) {
             return List.of();
-        }
-
-        final Registry<Enchantment> enchantmentRegistry =
-                RegistryAccess.registryAccess()
-                        .getRegistry(RegistryKey.ENCHANTMENT);
-
-        final List<ItemEnchantDto> enchantments = new ArrayList<>();
-        final Set<NamespacedKey> loadedKeys = new HashSet<>();
-
-        for (String enchantmentName : enchantmentsSection.getKeys(false)) {
-            final ConfigurationSection enchantmentSection =
-                    enchantmentsSection.getConfigurationSection(enchantmentName);
-
-            if (enchantmentSection == null) {
-                throw new InvalidPropertyTypeException(
-                        itemId,
-                        "Enchantment",
-                        "definition must be a section",
-                        enchantmentName
-
-                );
-            }
-
-            final NamespacedKey enchantmentKey =
-                    parseEnchantmentKey(
-                            itemId,
-                            enchantmentName
-                    );
-
-            if (!loadedKeys.add(enchantmentKey)) {
-                throw new InvalidPropertyTypeException(
-                        itemId,
-                        "enchantment",
-                        "Duplicate",
-                        enchantmentKey
-                );
-            }
-
-            final Enchantment enchantment =
-                    enchantmentRegistry.get(enchantmentKey);
-
-            if (enchantment == null) {
-                throw new UnknownConfigurationValueException(
-                        itemId,
-                        "enchantment",
-                        enchantmentKey.getKey()
-                );
-            }
-
-            final int level = loadEnchantmentLevel(
-                    itemId,
-                    enchantmentKey,
-                    enchantmentSection
-            );
-
-            final boolean ignoreLevelRestriction =
-                    enchantmentSection.getBoolean(
-                            "ignoreLevelRestriction",
-                            false
-                    );
-
-            validateEnchantmentLevel(
-                    itemId,
-                    enchantment,
-                    level,
-                    ignoreLevelRestriction
-            );
-
-            enchantments.add(
-                    new ItemEnchantDto(
-                            enchantment,
-                            level,
-                            ignoreLevelRestriction
-                    )
-            );
         }
 
         return enchantments;
     }
 
     /**
-     * エンチャント名をNamespacedKeyへ変換する。
-     *
-     * <p>
-     * 名前空間が省略された場合はminecraft名前空間を使用する。
-     * </p>
-     *
-     * @param itemId          アイテムID
-     * @param enchantmentName エンチャント名
-     * @return NamespacedKey
-     */
-    private NamespacedKey parseEnchantmentKey(
-            final String itemId,
-            final String enchantmentName
-    ) {
-        final String normalizedName =
-                enchantmentName.toLowerCase(Locale.ROOT);
-
-        final NamespacedKey key =
-                NamespacedKey.fromString(normalizedName);
-
-        if (key == null) {
-            throw new InvalidPropertyValueException(
-                    itemId,
-                    "enchantment key",
-                    enchantmentName
-            );
-        }
-
-        return key;
-    }
-
-    /**
-     * エンチャントレベルを読み込む。
-     *
-     * @param itemId             アイテムID
-     * @param enchantmentKey     エンチャントキー
-     * @param enchantmentSection エンチャント設定
-     * @return エンチャントレベル
-     */
-    private int loadEnchantmentLevel(
-            final String itemId,
-            final NamespacedKey enchantmentKey,
-            final ConfigurationSection enchantmentSection
-    ) {
-        final Object rawLevel =
-                enchantmentSection.get("level");
-
-        if (!(rawLevel instanceof Number number)) {
-            throw new InvalidPropertyTypeException(
-                    itemId,
-                    "Enchantment",
-                    enchantmentKey.getKey(),
-                    "level must be an integer"
-            );
-        }
-
-        final double doubleValue = number.doubleValue();
-
-        if (!Double.isFinite(doubleValue)
-                || doubleValue != Math.rint(doubleValue)
-                || doubleValue < 1
-                || doubleValue > Integer.MAX_VALUE
-        ) {
-            throw new InvalidPropertyValueException(
-                    itemId,
-                    "enchantments." + enchantmentKey + ".level",
-                    rawLevel,
-                    "must be greater than or equal to 1"
-            );
-        }
-
-        return (int) doubleValue;
-    }
-
-    /**
-     * エンチャントレベルを検証する。
-     *
-     * @param itemId                 アイテムID
-     * @param enchantment            エンチャント
-     * @param level                  設定レベル
-     * @param ignoreLevelRestriction レベル制限を無視する場合true
-     */
-    private void validateEnchantmentLevel(
-            final String itemId,
-            final Enchantment enchantment,
-            final int level,
-            final boolean ignoreLevelRestriction
-    ) {
-        if (ignoreLevelRestriction) {
-            return;
-        }
-
-        if (level < enchantment.getStartLevel()
-                || level > enchantment.getMaxLevel()) {
-            throw new InvalidPropertyValueException(
-                    itemId,
-                    "enchantments." + enchantment.getKey() + ".level",
-                    level,
-                    "must be between 1 and " + enchantment.getMaxLevel()
-            );
-        }
-    }
-
-    /**
-     * YAMLからAttributeModifier一覧を読み込む。
+     * YAMLからAttributeID一覧を読み込む。
      *
      * @param itemId  アイテムID
      * @param section アイテム設定
      * @return AttributeModifier一覧
      */
-    private List<ItemAttributeDto> loadAttributes(
+    private List<String> loadAttributes(
             final String itemId,
             final ConfigurationSection section
     ) {
-        final ConfigurationSection attributesSection =
-                section.getConfigurationSection("attributes");
+        final List<String> attributes =
+                section.getStringList("attributes");
 
-        if (attributesSection == null) {
+        if (attributes.isEmpty()) {
             return List.of();
         }
 
-        final List<ItemAttributeDto> attributes = new ArrayList<>();
-
-        for (String key : attributesSection.getKeys(false)) {
-            final ConfigurationSection value =
-                    attributesSection.getConfigurationSection(key);
-
-            if (value == null) {
-                continue;
-            }
-
-            attributes.add(loadAttribute(
-                    itemId,
-                    key,
-                    value
-            ));
-
-        }
-
-        return List.copyOf(attributes);
+        return attributes;
     }
 
     /**
-     * AttributeModifierを読み込む。
+     * YAMLからPotionEffect一覧を読み込む。
      *
-     * @param itemId     アイテムID
-     * @param modifierId AttributeName
-     * @param section    Attribute設定
-     * @return AttributeModifier情報
+     * @param itemId  アイテムID
+     * @param section アイテム設定
+     * @return PotionEffect一覧
      */
-    private ItemAttributeDto loadAttribute(
+    private List<String> loadEffects(
             final String itemId,
-            final String modifierId,
             final ConfigurationSection section
     ) {
-        final String attributeName = requireString(section, "attribute", itemId, modifierId);
-        final Attribute attribute = parseAttribute(itemId, modifierId, attributeName);
-        final double amount = requireDouble(section, "amount", itemId, modifierId);
-        final String operationName = requireString(section, "operation", itemId, modifierId);
-        final AttributeModifier.Operation operation =
-                parseOperation(itemId, modifierId, operationName);
-        final String slotGroupName = requireString(section, "slot", itemId, modifierId);
-        final EquipmentSlotGroup slotGroup = parseSlotGroup(
-                itemId, modifierId, slotGroupName);
+        final List<String> effects =
+                section.getStringList("effects");
 
-        return new ItemAttributeDto(
-                modifierId,
-                attribute,
-                amount,
-                operation,
-                slotGroup
-        );
-    }
-
-    /**
-     * Attribute名をBukkitのAttributeへ変換する。
-     *
-     * @param itemId     アイテムID
-     * @param modifierId Attribute名
-     * @return 変換したAttribute
-     * @throws InvalidPropertyValueException      Attribute名をNamespacedKeyへ変換できない場合
-     * @throws UnknownConfigurationValueException 対応するAttributeが存在しない場合
-     */
-    private Attribute parseAttribute(
-            final String itemId,
-            final String modifierId,
-            final String attributeName
-    ) {
-        final String normalizedName =
-                attributeName.toLowerCase(Locale.ROOT);
-
-        final NamespacedKey attributeKey =
-                NamespacedKey.fromString(normalizedName);
-
-        if (attributeKey == null) {
-            throw new InvalidPropertyValueException(
-                    itemId,
-                    "attributes." + modifierId + ".attribute",
-                    attributeName,
-                    "must be a valid namespaced key"
-            );
+        if (effects.isEmpty()) {
+            return List.of();
         }
 
-        final Registry<Attribute> attributeRegistry =
-                RegistryAccess.registryAccess()
-                        .getRegistry(RegistryKey.ATTRIBUTE);
-
-        final Attribute attribute =
-                attributeRegistry.get(attributeKey);
-
-        if (attribute == null) {
-            throw new UnknownConfigurationValueException(
-                    itemId,
-                    "attributes." + modifierId + ".attribute",
-                    attributeName
-            );
-        }
-
-        return attribute;
-    }
-
-    /**
-     * Operation名をAttributeModifier.Operationへ変換する。
-     *
-     * @param itemId        アイテムID
-     * @param attributeName Attribute名
-     * @param operationName Operation名
-     * @return AttributeModifier.Operation
-     * @throws InvalidEnumValueException Operationへ変換できない場合
-     */
-    private AttributeModifier.Operation parseOperation(
-            final String itemId,
-            final String attributeName,
-            final String operationName
-    ) {
-        try {
-            return AttributeModifier.Operation.valueOf(
-                    operationName.toUpperCase(Locale.ROOT)
-            );
-        } catch (IllegalArgumentException ex) {
-            throw new InvalidEnumValueException(
-                    itemId,
-                    "attributes." + attributeName + ".operation",
-                    operationName,
-                    AttributeModifier.Operation.class
-            );
-        }
-    }
-
-    /**
-     * EquipmentSlotGroup名をBukkitのEquipmentSlotGroupへ変換する。
-     *
-     * @param itemId        アイテムID
-     * @param attributeName Attribute名
-     * @param slotGroupName EquipmentSlotGroup名
-     * @return EquipmentSlotGroup
-     * @throws UnknownConfigurationValueException 存在しないSlotGroupの場合
-     */
-    private EquipmentSlotGroup parseSlotGroup(
-            final String itemId,
-            final String attributeName,
-            final String slotGroupName
-    ) {
-        final EquipmentSlotGroup slotGroup =
-                EquipmentSlotGroup.getByName(
-                        slotGroupName.toLowerCase(Locale.ROOT)
-                );
-
-        if (slotGroup == null) {
-            throw new UnknownConfigurationValueException(
-                    itemId,
-                    "attributes." + attributeName + ".slot",
-                    slotGroupName
-            );
-        }
-
-        return slotGroup;
-    }
-
-    /**
-     * 必須文字列を取得する。
-     *
-     * @param section       読み込み対象セクション
-     * @param path          キー
-     * @param itemId        アイテムID
-     * @param attributeName Attribute名
-     * @return 空ではない文字列
-     */
-    private String requireString(
-            final ConfigurationSection section,
-            final String path,
-            final String itemId,
-            final String attributeName
-    ) {
-        final String propertyPath =
-                "attributes." + attributeName + "." + path;
-
-        if (!section.isSet(path)) {
-            throw new RequiredPropertyException(
-                    itemId,
-                    propertyPath
-            );
-        }
-
-        final Object rawValue = section.get(path);
-
-        if (!(rawValue instanceof String value)) {
-            throw new InvalidPropertyTypeException(
-                    itemId,
-                    propertyPath,
-                    "string",
-                    rawValue
-            );
-        }
-
-        if (value.isBlank()) {
-            throw new InvalidPropertyValueException(
-                    itemId,
-                    propertyPath,
-                    value,
-                    "must not be blank"
-            );
-        }
-
-        return value;
-    }
-
-    /**
-     * 必須の有限な数値を取得する。
-     *
-     * @param section       読み込み対象セクション
-     * @param path          キー
-     * @param itemId        アイテムID
-     * @param attributeName Attribute名
-     * @return 有限なdouble値
-     */
-    private double requireDouble(
-            final ConfigurationSection section,
-            final String path,
-            final String itemId,
-            final String attributeName
-    ) {
-        final String propertyPath =
-                "attributes." + attributeName + "." + path;
-
-        if (!section.isSet(path)) {
-            throw new RequiredPropertyException(
-                    itemId,
-                    propertyPath
-            );
-        }
-
-        final Object rawValue = section.get(path);
-
-        if (!(rawValue instanceof Number number)) {
-            throw new InvalidPropertyTypeException(
-                    itemId,
-                    propertyPath,
-                    "number",
-                    rawValue
-            );
-        }
-
-        final double value = number.doubleValue();
-
-        if (!Double.isFinite(value)) {
-            throw new InvalidPropertyValueException(
-                    itemId,
-                    propertyPath,
-                    rawValue,
-                    "must be a finite number"
-            );
-        }
-
-        return value;
+        return effects;
     }
 
     /**

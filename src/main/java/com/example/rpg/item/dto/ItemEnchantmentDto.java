@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * RPGアイテムへ設定するエンチャント情報を保持するDTO
  */
-public class ItemEnchantDto {
+public class ItemEnchantmentDto {
 
     /**
      * 設定するエンチャント
@@ -31,7 +31,7 @@ public class ItemEnchantDto {
      * @param level                  エンチャントレベル
      * @param ignoreLevelRestriction レベル制限を無視する場合true
      */
-    public ItemEnchantDto(
+    public ItemEnchantmentDto(
             final Enchantment enchantment,
             final int level,
             final boolean ignoreLevelRestriction

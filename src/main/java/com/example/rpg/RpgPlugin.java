@@ -4,7 +4,13 @@ import com.example.rpg.command.*;
 import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.item.ItemBuilder;
 import com.example.rpg.item.pdc.ItemPdcKeys;
+import com.example.rpg.item.repository.YamlAttributeRepository;
+import com.example.rpg.item.repository.YamlEffectRepository;
+import com.example.rpg.item.repository.YamlEnchantmentRepository;
 import com.example.rpg.item.repository.YamlItemRepository;
+import com.example.rpg.item.repository.interfaces.IAttributeRepository;
+import com.example.rpg.item.repository.interfaces.IEffectRepository;
+import com.example.rpg.item.repository.interfaces.IEnchantmentRepository;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
 import com.example.rpg.item.service.ItemPdcService;
 import com.example.rpg.listener.BlockBreakListener;
@@ -55,6 +61,18 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * RPGアイテム定義Repository。
      */
     private IItemRepository itemRepository;
+    /**
+     * RPG属性定義Repository。
+     */
+    private IAttributeRepository attributeRepository;
+    /**
+     * RPGエンチャント定義Repository。
+     */
+    private IEnchantmentRepository enchantmentRepository;
+    /**
+     * RPG効果定義Repository。
+     */
+    private IEffectRepository effectRepository;
     /**
      * RPGアイテム用PDCキー。
      */
@@ -139,6 +157,12 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         this.itemRepository = new YamlItemRepository(
                 YamlConfiguration.loadConfiguration(new File(getDataFolder(), "items.yml"))
         );
+        this.attributeRepository = new YamlAttributeRepository(
+                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "attirbutes.yml")));
+        this.enchantmentRepository = new YamlEnchantmentRepository(this,
+                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "enchantments.yml")));
+        this.effectRepository = new YamlEffectRepository(
+                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "effects.yml")));
     }
 
     /**
@@ -167,6 +191,9 @@ public class RpgPlugin extends JavaPlugin implements Listener {
 
         this.itemBuilder = new ItemBuilder(
                 itemRepository,
+                attributeRepository,
+                enchantmentRepository,
+                effectRepository,
                 itemPdcKeys,
                 this
         );
@@ -307,5 +334,8 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         copyResourceIfAbsent("shop-purchases.yml", isFileOverWrite);
         copyResourceIfAbsent("shop.yml", isFileOverWrite);
         copyResourceIfAbsent("items.yml", isFileOverWrite);
+        copyResourceIfAbsent("attributes.yml", isFileOverWrite);
+        copyResourceIfAbsent("effects.yml", isFileOverWrite);
+        copyResourceIfAbsent("enchantments.yml", isFileOverWrite);
     }
 }

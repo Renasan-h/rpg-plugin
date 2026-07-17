@@ -1,0 +1,7 @@
+enchantments:
+  sharpness:
+    level: 10
+    ignoreLevelRestriction: true
+  fire_aspect:
+    level: 2
+    ignoreLevelRestriction: false

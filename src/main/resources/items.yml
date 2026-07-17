@@ -9,21 +9,10 @@ items:
     unbreakable: true
     customModelData: 9001
     enchantments:
-      sharpness:
-        level: 10
-        ignoreLevelRestriction: true
+      - sharpness
     attributes:
-      attack_damage_flat:
-        attribute: attack_damage
-        amount: 5
-        operation: ADD_NUMBER
-        slot: mainhand
-
-      attack_damage_bonus:
-        attribute: attack_damage
-        amount: 0.1
-        operation: ADD_SCALAR
-        slot: mainhand
+      - attack_damage_flat
+      - attack_damage_bonus
 
   wooden_sword_dev2:
     material: WOODEN_SWORD
@@ -63,13 +52,8 @@ items:
       - HIDE_ATTRIBUTES
     customModelData: 1001
     enchantments:
-      sharpness:
-        level: 5
-        ignoreLevelRestriction: false
-
-      fire_aspect:
-        level: 2
-        ignoreLevelRestriction: false
+      - sharpness
+      - fire_aspect
 
   shield:
     material: SHIELD
@@ -90,6 +74,17 @@ items:
     displayName: "<#89F336>回復ポーション</#89F336>"
     lore:
       - "<gray>体力を回復するポーション</gray>"
+
+  potion_dev1:
+    material: POTION
+    displayName: "<#89F336>開発ポーション_dev1</#89F336>"
+    lore:
+      - "<gray>複数効果を発揮するポーション</gray>"
+      - "・<gray>体力持続回復</gray>"
+      - "・<gray>速度上昇</gray>"
+    effects:
+      - regeneration
+      - speed
 
   heal_ticket:
     material: PAPER

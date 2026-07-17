@@ -1,0 +1,10 @@
+effects:
+  regeneration:
+    duration: 200
+    amplifier: 1
+    ambient: false
+    particles: true
+    icon: true
+  speed:
+    duration: 100
+    amplifier: 2

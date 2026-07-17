@@ -1,0 +1,12 @@
+attributes:
+  attack_damage_flat:
+    attribute: attack_damage
+    amount: 5
+    operation: ADD_NUMBER
+    slot: mainhand
+
+  attack_damage_bonus:
+    attribute: attack_damage
+    amount: 0.1
+    operation: ADD_SCALAR
+    slot: mainhand

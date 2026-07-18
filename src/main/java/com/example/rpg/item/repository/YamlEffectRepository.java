@@ -4,6 +4,7 @@ import com.example.rpg.common.exception.InvalidPropertyTypeException;
 import com.example.rpg.common.exception.InvalidPropertyValueException;
 import com.example.rpg.common.exception.RequiredPropertyException;
 import com.example.rpg.common.exception.UnknownConfigurationValueException;
+import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemEffectDto;
 import com.example.rpg.item.repository.interfaces.IEffectRepository;
 import io.papermc.paper.registry.RegistryAccess;
@@ -18,7 +19,6 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * RPG プラグイン独自の効果情報用Repository
@@ -36,65 +36,31 @@ import java.util.Objects;
  * 　　　　icon: boolean</br>
  * </p>
  */
-public class YamlEffectRepository implements IEffectRepository {
+public class YamlEffectRepository extends AbstractYamlRepository<Map<String, ItemEffectDto>> implements IEffectRepository {
     /**
      * 効果定義のルートセクション名
      */
     private static final String EFFECTS_SECTION_PATH = "effects";
 
     /**
-     * 効果定義ファイル。
-     */
-    private final File configurationFile;
-
-    /**
-     * 読み込み済み効果定義
-     *
-     * <p>
-     * キーは効果ID、値は効果定義とする。
-     * MapはRepository内部でのみ使用する。
-     * </p>
-     */
-    private final Map<String, ItemEffectDto> effects =
-            new LinkedHashMap<>();
-
-    /**
      * YAML形式のItemEffectRepositoryを生成する。
      *
      * @param configurationFile effects.yml
-     * @throws NullPointerException configurationFileがnullの場合
      */
     public YamlEffectRepository(
             final File configurationFile
     ) {
-        this.configurationFile = Objects.requireNonNull(
-                configurationFile,
-                "configurationFile must not be null"
-        );
+        super(configurationFile);
 
         load();
     }
 
     /**
      * {@inheritDoc}
-     *
-     * <p>
-     * ディスク上のeffects.ymlを読み直し、全定義の解析成功後に
-     * Repositoryのキャッシュを更新する。
-     * </p>
      */
     @Override
     public void load() {
-        final YamlConfiguration loadedConfiguration =
-                YamlConfiguration.loadConfiguration(
-                        configurationFile
-                );
-
-        final Map<String, ItemEffectDto> loadedEffects =
-                loadEffects(loadedConfiguration);
-
-        effects.clear();
-        effects.putAll(loadedEffects);
+        reloadData();
     }
 
     /**
@@ -103,7 +69,8 @@ public class YamlEffectRepository implements IEffectRepository {
      * @param configuration effects.ymlの読込結果
      * @return Effect定義一覧
      */
-    private Map<String, ItemEffectDto> loadEffects(
+    @Override
+    protected Map<String, ItemEffectDto> parse(
             final YamlConfiguration configuration
     ) {
         final ConfigurationSection effectsSection =
@@ -402,7 +369,7 @@ public class YamlEffectRepository implements IEffectRepository {
      */
     @Override
     public ItemEffectDto findById(final String effectId) {
-        return effects.get(effectId);
+        return getCurrentData().get(effectId);
     }
 
     /**
@@ -410,6 +377,6 @@ public class YamlEffectRepository implements IEffectRepository {
      */
     @Override
     public Map<String, ItemEffectDto> findAll() {
-        return Map.copyOf(effects);
+        return Map.copyOf(getCurrentData());
     }
 }

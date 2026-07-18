@@ -4,6 +4,7 @@ import com.example.rpg.common.exception.ConfigurationException;
 import com.example.rpg.common.exception.InvalidPropertyTypeException;
 import com.example.rpg.common.exception.InvalidPropertyValueException;
 import com.example.rpg.common.exception.UnknownConfigurationValueException;
+import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemEnchantmentDto;
 import com.example.rpg.item.repository.interfaces.IEnchantmentRepository;
 import io.papermc.paper.registry.RegistryAccess;
@@ -20,39 +21,19 @@ import java.util.*;
 /**
  * RPG プラグイン独自のエンチャント情報用Repository
  */
-public class YamlEnchantmentRepository implements IEnchantmentRepository {
+public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String, ItemEnchantmentDto>> implements IEnchantmentRepository {
     /**
      * 効果定義のルートセクション名
      */
     private static final String ENCHANTMENTS_SECTION_PATH = "enchantments";
 
     /**
-     * エンチャント定義ファイル。
-     */
-    private final File configurationFile;
-
-    /**
-     * 読み込み済み効果定義
-     *
-     * <p>
-     * キーは効果ID、値は効果定義とする。
-     * MapはRepository内部でのみ使用する。
-     * </p>
-     */
-    private final Map<String, ItemEnchantmentDto> enchantments =
-            new LinkedHashMap<>();
-
-    /**
      * YAML形式のItemEnchantmentRepositoryを生成する。
      *
      * @param configurationFile enchantments.ymlの読み込み結果
-     * @throws NullPointerException configがnullの場合
      */
     public YamlEnchantmentRepository(final File configurationFile) {
-        this.configurationFile = Objects.requireNonNull(
-                configurationFile,
-                "configurationFile must not be null"
-        );
+        super(configurationFile);
 
         load();
     }
@@ -62,16 +43,7 @@ public class YamlEnchantmentRepository implements IEnchantmentRepository {
      */
     @Override
     public void load() {
-        final YamlConfiguration loadedConfiguration =
-                YamlConfiguration.loadConfiguration(
-                        configurationFile
-                );
-
-        final Map<String, ItemEnchantmentDto> loadedEnchantments =
-                loadEnchantments(loadedConfiguration);
-
-        enchantments.clear();
-        enchantments.putAll(loadedEnchantments);
+        reloadData();
     }
 
     /**
@@ -80,7 +52,8 @@ public class YamlEnchantmentRepository implements IEnchantmentRepository {
      * @param configuration enchantments.ymlの読込結果
      * @return Enchantment定義一覧
      */
-    private Map<String, ItemEnchantmentDto> loadEnchantments(
+    @Override
+    protected Map<String, ItemEnchantmentDto> parse(
             final YamlConfiguration configuration
     ) {
         final ConfigurationSection enchantmentsSection =
@@ -301,7 +274,7 @@ public class YamlEnchantmentRepository implements IEnchantmentRepository {
      */
     @Override
     public ItemEnchantmentDto findById(final String enchantmentId) {
-        return enchantments.get(enchantmentId);
+        return getCurrentData().get(enchantmentId);
     }
 
     /**
@@ -309,6 +282,6 @@ public class YamlEnchantmentRepository implements IEnchantmentRepository {
      */
     @Override
     public Map<String, ItemEnchantmentDto> findAll() {
-        return enchantments;
+        return getCurrentData();
     }
 }

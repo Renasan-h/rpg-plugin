@@ -1,6 +1,7 @@
 package com.example.rpg.item.repository;
 
 import com.example.rpg.common.exception.*;
+import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemAttributeDto;
 import com.example.rpg.item.repository.interfaces.IAttributeRepository;
 import io.papermc.paper.registry.RegistryAccess;
@@ -17,67 +18,33 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * RPG プラグイン独自の属性情報用Repository
  */
-public class YamlAttributeRepository implements IAttributeRepository {
+public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, ItemAttributeDto>> implements IAttributeRepository {
     /**
      * 属性定義のルートセクション名
      */
     private static final String ATTRIBUTES_SECTION_PATH = "attributes";
 
     /**
-     * 属性定義ファイル。
-     */
-    private final File configurationFile;
-
-    /**
-     * 読み込み済み属性定義
+     * SHOP Repositoryを生成する。
      *
-     * <p>
-     * ListはRepository内部でのみ使用する。
-     * </p>
-     */
-    private final Map<String, ItemAttributeDto> attributes =
-            new LinkedHashMap<>();
-
-    /**
-     * YAML形式のItemAttributeRepositoryを生成する。
-     *
-     * @param configurationFile attribute.yml
-     * @throws NullPointerException configがnullの場合
+     * @param configurationFile shop.yml
      */
     public YamlAttributeRepository(final File configurationFile) {
-        this.configurationFile = Objects.requireNonNull(
-                configurationFile,
-                "configurationFile must not be null"
-        );
+        super(configurationFile);
 
         load();
     }
 
     /**
      * {@inheritDoc}
-     *
-     * <p>
-     * ディスク上のattributes.ymlを読み直し、全定義の解析成功後に
-     * Repositoryのキャッシュを更新する。
-     * </p>
      */
     @Override
     public void load() {
-        final YamlConfiguration loadedConfiguration =
-                YamlConfiguration.loadConfiguration(
-                        configurationFile
-                );
-
-        final Map<String, ItemAttributeDto> loadedAttributes =
-                loadAttributes(loadedConfiguration);
-
-        attributes.clear();
-        attributes.putAll(loadedAttributes);
+        reloadData();
     }
 
     /**
@@ -86,7 +53,8 @@ public class YamlAttributeRepository implements IAttributeRepository {
      * @param configuration attributes.ymlの読込結果
      * @return Attribute定義一覧
      */
-    private Map<String, ItemAttributeDto> loadAttributes(
+    @Override
+    protected Map<String, ItemAttributeDto> parse(
             final YamlConfiguration configuration
     ) {
         final ConfigurationSection attributesSection =
@@ -355,7 +323,7 @@ public class YamlAttributeRepository implements IAttributeRepository {
      */
     @Override
     public ItemAttributeDto findById(final String attributeId) {
-        return attributes.get(attributeId);
+        return getCurrentData().get(attributeId);
     }
 
     /**
@@ -363,6 +331,6 @@ public class YamlAttributeRepository implements IAttributeRepository {
      */
     @Override
     public Map<String, ItemAttributeDto> findAll() {
-        return attributes;
+        return getCurrentData();
     }
 }

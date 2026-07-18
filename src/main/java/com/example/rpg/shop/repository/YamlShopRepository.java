@@ -3,6 +3,7 @@ package com.example.rpg.shop.repository;
 import com.example.rpg.common.exception.ConfigurationException;
 import com.example.rpg.common.exception.InvalidPropertyTypeException;
 import com.example.rpg.common.exception.InvalidPropertyValueException;
+import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.shop.dto.ShopCategoryDto;
 import com.example.rpg.shop.dto.ShopDto;
 import com.example.rpg.shop.dto.ShopItemDto;
@@ -31,7 +32,7 @@ import java.util.*;
  * データ取得方法の変更をRepository内へ閉じ込められる。
  * </p>
  */
-public class YamlShopRepository implements IShopRepository {
+public class YamlShopRepository extends AbstractYamlRepository<ShopDto> implements IShopRepository {
 
     /**
      * SHOP定義のルートセクション名
@@ -39,57 +40,22 @@ public class YamlShopRepository implements IShopRepository {
     private static final String SHOP_SECTION_PATH = "shop";
 
     /**
-     * SHOP設定ファイル
-     */
-    private final File configurationFile;
-
-    /**
-     * 読み込み済みのSHOP定義。
-     *
-     * <p>
-     * config.ymlの内容をDTOへ変換した結果を保持する。
-     * Repository内のみが保持し、外部から直接変更しないことを前提とする。
-     * </p>
-     */
-    private ShopDto shop;
-
-    /**
      * SHOP Repositoryを生成する。
      *
      * @param configurationFile shop.yml
-     * @throws NullPointerException configurationFileがnullの場合
      */
     public YamlShopRepository(File configurationFile) {
-        this.configurationFile = Objects.requireNonNull(
-                configurationFile,
-                "configurationFile must not be null"
-        );
+        super(configurationFile);
 
         load();
     }
 
     /**
      * {@inheritDoc}
-     *
-     * <p>
-     * ディスク上のshop.ymlを読み直し、すべての定義を正常に
-     * 解析できた場合のみ、現在のSHOP定義を更新する。
-     * </p>
      */
+    @Override
     public void load() {
-        final YamlConfiguration configuration =
-                YamlConfiguration.loadConfiguration(
-                        configurationFile
-                );
-
-        /*
-         * loadShop内で例外が発生した場合、
-         * this.shopへの代入は行われない。
-         */
-        final ShopDto loadedShop =
-                loadShop(configuration);
-
-        this.shop = loadedShop;
+        reloadData();
     }
 
     /**
@@ -98,7 +64,8 @@ public class YamlShopRepository implements IShopRepository {
      * @param configuration shop.ymlの読込結果
      * @return SHOP定義
      */
-    private ShopDto loadShop(
+    @Override
+    protected ShopDto parse(
             final YamlConfiguration configuration
     ) {
         final ConfigurationSection shopSection =
@@ -467,7 +434,7 @@ public class YamlShopRepository implements IShopRepository {
     public List<ShopCategoryDto> findCategories() {
         return List.copyOf(
                 new ArrayList<>(
-                        shop.getCategories().values()
+                        getCurrentData().getCategories().values()
                 )
         );
     }
@@ -479,7 +446,7 @@ public class YamlShopRepository implements IShopRepository {
     public ShopCategoryDto findShopCategoryById(
             final String categoryId
     ) {
-        return shop.getCategories().get(categoryId);
+        return getCurrentData().getCategories().get(categoryId);
     }
 
     /**
@@ -513,7 +480,7 @@ public class YamlShopRepository implements IShopRepository {
             return null;
         }
 
-        return shop.getCategories()
+        return getCurrentData().getCategories()
                 .values()
                 .stream()
                 .flatMap(category ->
@@ -538,7 +505,7 @@ public class YamlShopRepository implements IShopRepository {
             return null;
         }
 
-        return shop.getCategories()
+        return getCurrentData().getCategories()
                 .values()
                 .stream()
                 .flatMap(category ->
@@ -557,6 +524,6 @@ public class YamlShopRepository implements IShopRepository {
      */
     @Override
     public ShopDto getShop() {
-        return shop;
+        return getCurrentData();
     }
 }

@@ -4,6 +4,7 @@ package com.example.rpg.item.repository;
 import com.example.rpg.common.exception.ConfigurationException;
 import com.example.rpg.common.exception.InvalidPropertyTypeException;
 import com.example.rpg.common.exception.UnknownConfigurationValueException;
+import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemDto;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
 import org.bukkit.Material;
@@ -23,79 +24,39 @@ import java.util.*;
  * 呼び出し側へMapを公開しない。
  * </p>
  */
-public class YamlItemRepository implements IItemRepository {
+public class YamlItemRepository extends AbstractYamlRepository<Map<String, ItemDto>> implements IItemRepository {
     /**
      * アイテム定義のルートセクション名
      */
     private static final String ITEMS_SECTION_PATH = "items";
 
     /**
-     * アイテム定義ファイル。
-     */
-    private final File configurationFile;
-
-    /**
-     * 読み込み済みアイテム定義
-     *
-     * <p>
-     * キーはアイテムID、値はアイテム定義とする。
-     * MapはRepository内部でのみ使用する。
-     * </p>
-     */
-    private final Map<String, ItemDto> items =
-            new LinkedHashMap<>();
-
-    /**
      * YAML形式のItemRepositoryを生成する。
      *
      * @param configurationFile items.yml
-     * @throws NullPointerException configurationFileがnullの場合
      */
     public YamlItemRepository(final File configurationFile) {
-        this.configurationFile = Objects.requireNonNull(
-                configurationFile,
-                "configurationFile must not be null"
-        );
+        super(configurationFile);
 
         load();
     }
 
     /**
      * {@inheritDoc}
-     *
-     * <p>
-     * ディスク上のitems.ymlを読み直し、すべての定義を正常に
-     * 解析できた場合のみ、現在のキャッシュを更新する。
-     * </p>
      */
     @Override
     public void load() {
-        final YamlConfiguration loadedConfiguration =
-                YamlConfiguration.loadConfiguration(
-                        configurationFile
-                );
-
-        final Map<String, ItemDto> loadedItems =
-                loadItems(loadedConfiguration);
-
-        items.clear();
-        items.putAll(loadedItems);
+        reloadData();
     }
 
     /**
      * YAML設定からアイテム定義一覧を読み込む。
      *
-     * <p>
-     * このメソッドでは現在のRepositoryキャッシュを変更しない。
-     * 全定義を正常に解析できた場合のみ、呼び出し元がキャッシュを
-     * 更新する。
-     * </p>
-     *
      * @param configuration items.ymlの読込結果
      * @return 読み込んだアイテム定義
-     * @throws ConfigurationException itemsセクションが存在しない場合
      */
-    private Map<String, ItemDto> loadItems(
+    @Override
+    protected Map<String, ItemDto> parse(
             final YamlConfiguration configuration
     ) {
         final ConfigurationSection itemsSection =
@@ -129,7 +90,9 @@ public class YamlItemRepository implements IItemRepository {
             );
         }
 
-        return loadedItems;
+        return Collections.unmodifiableMap(
+                new LinkedHashMap<>(loadedItems)
+        );
     }
 
     /**
@@ -369,7 +332,7 @@ public class YamlItemRepository implements IItemRepository {
      */
     @Override
     public ItemDto findById(final String itemId) {
-        return items.get(itemId);
+        return getCurrentData().get(itemId);
     }
 
     /**
@@ -378,7 +341,7 @@ public class YamlItemRepository implements IItemRepository {
     @Override
     public List<ItemDto> findAll() {
         return List.copyOf(
-                new ArrayList<>(items.values())
+                new ArrayList<>(getCurrentData().values())
         );
     }
 }

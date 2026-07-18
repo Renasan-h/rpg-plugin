@@ -11,6 +11,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemFlag;
 
+import java.io.File;
 import java.util.*;
 
 /**
@@ -29,9 +30,9 @@ public class YamlItemRepository implements IItemRepository {
     private static final String ITEMS_SECTION_PATH = "items";
 
     /**
-     * items.ymlの読み込み結果
+     * アイテム定義ファイル。
      */
-    private final YamlConfiguration config;
+    private final File configurationFile;
 
     /**
      * 読み込み済みアイテム定義
@@ -47,13 +48,13 @@ public class YamlItemRepository implements IItemRepository {
     /**
      * YAML形式のItemRepositoryを生成する。
      *
-     * @param config items.ymlの読み込み結果
-     * @throws NullPointerException configがnullの場合
+     * @param configurationFile items.yml
+     * @throws NullPointerException configurationFileがnullの場合
      */
-    public YamlItemRepository(final YamlConfiguration config) {
-        this.config = Objects.requireNonNull(
-                config,
-                "config must not be null"
+    public YamlItemRepository(final File configurationFile) {
+        this.configurationFile = Objects.requireNonNull(
+                configurationFile,
+                "configurationFile must not be null"
         );
 
         load();
@@ -61,11 +62,46 @@ public class YamlItemRepository implements IItemRepository {
 
     /**
      * {@inheritDoc}
+     *
+     * <p>
+     * ディスク上のitems.ymlを読み直し、すべての定義を正常に
+     * 解析できた場合のみ、現在のキャッシュを更新する。
+     * </p>
      */
     @Override
     public void load() {
+        final YamlConfiguration loadedConfiguration =
+                YamlConfiguration.loadConfiguration(
+                        configurationFile
+                );
+
+        final Map<String, ItemDto> loadedItems =
+                loadItems(loadedConfiguration);
+
+        items.clear();
+        items.putAll(loadedItems);
+    }
+
+    /**
+     * YAML設定からアイテム定義一覧を読み込む。
+     *
+     * <p>
+     * このメソッドでは現在のRepositoryキャッシュを変更しない。
+     * 全定義を正常に解析できた場合のみ、呼び出し元がキャッシュを
+     * 更新する。
+     * </p>
+     *
+     * @param configuration items.ymlの読込結果
+     * @return 読み込んだアイテム定義
+     * @throws ConfigurationException itemsセクションが存在しない場合
+     */
+    private Map<String, ItemDto> loadItems(
+            final YamlConfiguration configuration
+    ) {
         final ConfigurationSection itemsSection =
-                config.getConfigurationSection(ITEMS_SECTION_PATH);
+                configuration.getConfigurationSection(
+                        ITEMS_SECTION_PATH
+                );
 
         if (itemsSection == null) {
             throw new ConfigurationException(
@@ -73,21 +109,27 @@ public class YamlItemRepository implements IItemRepository {
             );
         }
 
-        // reload時に削除済みの定義が残らないよう、
-        // 新しい定義を読み込む前にキャッシュを破棄する
-        items.clear();
+        final Map<String, ItemDto> loadedItems = new LinkedHashMap<>();
 
         for (String itemId : itemsSection.getKeys(false)) {
             final ConfigurationSection itemSection =
                     itemsSection.getConfigurationSection(itemId);
 
             if (itemSection == null) {
-                continue;
+                throw new ConfigurationException(
+                        "アイテム定義がセクションではありません。"
+                                + " / itemId="
+                                + itemId
+                );
             }
 
-            items.put(itemId,
-                    loadItem(itemId, itemSection));
+            loadedItems.put(
+                    itemId,
+                    loadItem(itemId, itemSection)
+            );
         }
+
+        return loadedItems;
     }
 
     /**

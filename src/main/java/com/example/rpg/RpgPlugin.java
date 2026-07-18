@@ -1,6 +1,11 @@
 package com.example.rpg;
 
-import com.example.rpg.command.*;
+import com.example.rpg.admin.command.AdminCommand;
+import com.example.rpg.admin.service.ConfigurationReloadService;
+import com.example.rpg.command.DevHelpCommand;
+import com.example.rpg.command.ExpCommand;
+import com.example.rpg.command.MoneyCommand;
+import com.example.rpg.command.PayCommand;
 import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.item.ItemBuilder;
 import com.example.rpg.item.pdc.ItemPdcKeys;
@@ -19,7 +24,6 @@ import com.example.rpg.listener.ServerPingListener;
 import com.example.rpg.repository.MoneyRepository;
 import com.example.rpg.repository.interfaces.IMoneyRepository;
 import com.example.rpg.service.ExpService;
-import com.example.rpg.shop.command.AdminCommand;
 import com.example.rpg.shop.command.ShopCommand;
 import com.example.rpg.shop.facade.ShopFacade;
 import com.example.rpg.shop.listener.ShopListener;
@@ -32,15 +36,25 @@ import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.shop.service.ShopService;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
 
 public class RpgPlugin extends JavaPlugin implements Listener {
+    /**
+     * リスポーン時のペナルティー減額率
+     */
+    final double RESPAWN_PENALTY = 0.3;
     /**
      * 経験値取得サービス
      */
@@ -77,7 +91,6 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * RPGアイテム用PDCキー。
      */
     private ItemPdcKeys itemPdcKeys;
-
     /**
      * RPGアイテム生成Builder。
      */
@@ -86,22 +99,22 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * ShopService
      */
     private ShopService shopService;
-
     /**
      * ItemPdcService
      */
     private ItemPdcService itemPdcService;
-
+    /**
+     * 設定再読み込みService。
+     */
+    private ConfigurationReloadService configurationReloadService;
     /**
      * ShopMenu
      */
     private ShopMenu shopMenu;
-
     /**
      * ShopFacade
      */
     private ShopFacade shopFacade;
-
     /**
      * SHOP GUI用PDCキー。
      */
@@ -154,15 +167,10 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 this, new File(getDataFolder(), "money.yml"));
         this.shopPurchaseRepository = new ShopPurchaseRepository(
                 this, new File(getDataFolder(), "shop-purchases.yml"));
-        this.itemRepository = new YamlItemRepository(
-                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "items.yml"))
-        );
-        this.attributeRepository = new YamlAttributeRepository(
-                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "attributes.yml")));
-        this.enchantmentRepository = new YamlEnchantmentRepository(
-                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "enchantments.yml")));
-        this.effectRepository = new YamlEffectRepository(
-                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "effects.yml")));
+        this.itemRepository = new YamlItemRepository(new File(getDataFolder(), "items.yml"));
+        this.attributeRepository = new YamlAttributeRepository(new File(getDataFolder(), "attributes.yml"));
+        this.enchantmentRepository = new YamlEnchantmentRepository(new File(getDataFolder(), "enchantments.yml"));
+        this.effectRepository = new YamlEffectRepository(new File(getDataFolder(), "effects.yml"));
     }
 
     /**
@@ -181,6 +189,14 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 itemBuilder,
                 itemRepository
         );
+        this.configurationReloadService =
+                new ConfigurationReloadService(
+                        this,
+                        itemRepository,
+                        attributeRepository,
+                        enchantmentRepository,
+                        effectRepository
+                );
     }
 
     /**
@@ -239,11 +255,11 @@ public class RpgPlugin extends JavaPlugin implements Listener {
 
         Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(moneyRepository));
         Objects.requireNonNull(getCommand("exp")).setExecutor(new ExpCommand(expService));
-        Objects.requireNonNull(getCommand("rpg")).setExecutor(new RpgCommand(this));
 
-        AdminCommand adminCommand = new AdminCommand(shopPurchaseRepository);
+        final AdminCommand adminCommand = new AdminCommand(configurationReloadService, shopPurchaseRepository);
         Objects.requireNonNull(getCommand("admin")).setExecutor(adminCommand);
         Objects.requireNonNull(getCommand("admin")).setTabCompleter(adminCommand);
+
 
         // 開発時に使用するヘルプコマンド
         DevHelpCommand devCommand = new DevHelpCommand();
@@ -292,11 +308,14 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     /**
      * サーバー接続時にプレイヤーへRPGステータス風メッセージを表示する。
      *
-     * @param event 参加イベント
+     * @param event 発生イベント
      */
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        var player = event.getPlayer();
+        Player player = event.getPlayer();
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd", Locale.ROOT);
+        String lastLogingDate = sdf.format(new Date(player.getLastLogin() * 1000));
 
         player.sendMessage(MessageUtil.mm(
                 "<gradient:#00ffff:#ff00ff>==============================</gradient>"
@@ -307,11 +326,39 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         ));
 
         player.sendMessage(MessageUtil.mm(
-                "<yellow>Lv." + player.getLevel() + "</yellow> <red>HP 100</red> <blue>MP 50</blue> <green>Money 0G</green>"
+                "<yellow>Lv." + player.getLevel()
+                        + "(Exp:" + String.format("%.2f", player.getExp() * 100) + ")</yellow> "
+                        + "<green>Money </green><gold>" + moneyRepository.findMoney(player.getUniqueId()) + "G</gold>"
+        ));
+
+        player.sendMessage(MessageUtil.mm(
+                "<gray>last login: " + lastLogingDate + "</gray>"
         ));
 
         player.sendMessage(MessageUtil.mm(
                 "<gradient:#00ffff:#ff00ff>==============================</gradient>"
+        ));
+    }
+
+    /**
+     * プレイヤーのリスポーンイベント
+     *
+     * @param event 発生イベント
+     */
+    @EventHandler
+    public void onRespown(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+
+        // プレイヤーがリスポーンした際に、所持金の30%を失う。
+        // 銀行に預けているお金は減らない
+        int currentMoney = moneyRepository.findMoney(uuid);
+        int result = (int) Math.ceil(currentMoney * RESPAWN_PENALTY);
+
+        moneyRepository.subtractMoney(player.getUniqueId(), result);
+
+        player.sendMessage(MessageUtil.red(
+                "所持金が" + result + "G 減少しました。"
         ));
     }
 
@@ -337,5 +384,43 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         copyResourceIfAbsent("attributes.yml", isFileOverWrite);
         copyResourceIfAbsent("effects.yml", isFileOverWrite);
         copyResourceIfAbsent("enchantments.yml", isFileOverWrite);
+    }
+
+    /**
+     * 指定された設定を再読み込みする。
+     *
+     * @param target 再読み込み対象
+     */
+    private void reloadConfiguration(
+            final String target
+    ) {
+        switch (target) {
+            case "all" -> {
+                reloadConfig();
+                reloadItemDefinitions();
+            }
+            case "config", "shop" -> reloadConfig();
+            case "items", "attributes", "enchantments", "effects" -> {
+                reloadConfig();
+            }
+            default -> throw new IllegalArgumentException(
+                    "Unsupported reload target: " + target
+            );
+        }
+    }
+
+    /**
+     * アイテム関連の定義ファイルを再読み込みする。
+     *
+     * <p>
+     * 参照関係を考慮し、詳細定義を先に読み込み、
+     * 最後にアイテム本体を読み込む。
+     * </p>
+     */
+    private void reloadItemDefinitions() {
+        attributeRepository.load();
+        enchantmentRepository.load();
+        effectRepository.load();
+        itemRepository.load();
     }
 }

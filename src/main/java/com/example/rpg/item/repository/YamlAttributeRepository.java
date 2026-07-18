@@ -13,6 +13,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.EquipmentSlotGroup;
 
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -28,9 +29,9 @@ public class YamlAttributeRepository implements IAttributeRepository {
     private static final String ATTRIBUTES_SECTION_PATH = "attributes";
 
     /**
-     * items.ymlの読み込み結果
+     * 属性定義ファイル。
      */
-    private final YamlConfiguration config;
+    private final File configurationFile;
 
     /**
      * 読み込み済み属性定義
@@ -45,13 +46,13 @@ public class YamlAttributeRepository implements IAttributeRepository {
     /**
      * YAML形式のItemAttributeRepositoryを生成する。
      *
-     * @param config items.ymlの読み込み結果
+     * @param configurationFile attribute.yml
      * @throws NullPointerException configがnullの場合
      */
-    public YamlAttributeRepository(final YamlConfiguration config) {
-        this.config = Objects.requireNonNull(
-                config,
-                "config must not be null"
+    public YamlAttributeRepository(final File configurationFile) {
+        this.configurationFile = Objects.requireNonNull(
+                configurationFile,
+                "configurationFile must not be null"
         );
 
         load();
@@ -59,30 +60,70 @@ public class YamlAttributeRepository implements IAttributeRepository {
 
     /**
      * {@inheritDoc}
+     *
+     * <p>
+     * ディスク上のattributes.ymlを読み直し、全定義の解析成功後に
+     * Repositoryのキャッシュを更新する。
+     * </p>
      */
     @Override
     public void load() {
+        final YamlConfiguration loadedConfiguration =
+                YamlConfiguration.loadConfiguration(
+                        configurationFile
+                );
+
+        final Map<String, ItemAttributeDto> loadedAttributes =
+                loadAttributes(loadedConfiguration);
+
+        attributes.clear();
+        attributes.putAll(loadedAttributes);
+    }
+
+    /**
+     * YAML設定からAttribute定義一覧を読み込む。
+     *
+     * @param configuration attributes.ymlの読込結果
+     * @return Attribute定義一覧
+     */
+    private Map<String, ItemAttributeDto> loadAttributes(
+            final YamlConfiguration configuration
+    ) {
         final ConfigurationSection attributesSection =
-                config.getConfigurationSection(ATTRIBUTES_SECTION_PATH);
+                configuration.getConfigurationSection(
+                        ATTRIBUTES_SECTION_PATH
+                );
 
         if (attributesSection == null) {
-            return;
+            return Map.of();
         }
 
-        // reload時に削除済みの定義が残らないよう、
-        // 新しい定義を読み込む前にキャッシュを破棄する
-        attributes.clear();
+        final Map<String, ItemAttributeDto> loadedAttributes = new LinkedHashMap<>();
 
-        for (String key : attributesSection.getKeys(false)) {
+        for (String attributeId : attributesSection.getKeys(false)) {
             final ConfigurationSection attributeSection =
-                    attributesSection.getConfigurationSection(key);
+                    attributesSection.getConfigurationSection(
+                            attributeId
+                    );
 
             if (attributeSection == null) {
-                continue;
+                throw new ConfigurationException(
+                        "Attribute定義がセクションではありません。"
+                                + " / attributeId="
+                                + attributeId
+                );
             }
 
-            attributes.put(key, loadAttribute(key, attributeSection));
+            loadedAttributes.put(
+                    attributeId,
+                    loadAttribute(
+                            attributeId,
+                            attributeSection
+                    )
+            );
         }
+
+        return loadedAttributes;
     }
 
     /**

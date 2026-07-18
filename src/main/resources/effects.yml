@@ -1,10 +1,12 @@
 effects:
-  regeneration:
+  regeneration_base:
+    type: regeneration
     duration: 200
     amplifier: 1
     ambient: false
     particles: true
     icon: true
-  speed:
+  speed_base:
+    type: speed
     duration: 100
-    amplifier: 2
+    amplifier: 2z

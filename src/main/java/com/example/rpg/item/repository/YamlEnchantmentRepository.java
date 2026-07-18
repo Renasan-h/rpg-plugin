@@ -1,5 +1,6 @@
 package com.example.rpg.item.repository;
 
+import com.example.rpg.common.exception.ConfigurationException;
 import com.example.rpg.common.exception.InvalidPropertyTypeException;
 import com.example.rpg.common.exception.InvalidPropertyValueException;
 import com.example.rpg.common.exception.UnknownConfigurationValueException;
@@ -13,6 +14,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 
+import java.io.File;
 import java.util.*;
 
 /**
@@ -25,9 +27,9 @@ public class YamlEnchantmentRepository implements IEnchantmentRepository {
     private static final String ENCHANTMENTS_SECTION_PATH = "enchantments";
 
     /**
-     * enchantments.ymlの読み込み結果
+     * エンチャント定義ファイル。
      */
-    private final YamlConfiguration config;
+    private final File configurationFile;
 
     /**
      * 読み込み済み効果定義
@@ -43,13 +45,13 @@ public class YamlEnchantmentRepository implements IEnchantmentRepository {
     /**
      * YAML形式のItemEnchantmentRepositoryを生成する。
      *
-     * @param config items.ymlの読み込み結果
+     * @param configurationFile enchantments.ymlの読み込み結果
      * @throws NullPointerException configがnullの場合
      */
-    public YamlEnchantmentRepository(final YamlConfiguration config) {
-        this.config = Objects.requireNonNull(
-                config,
-                "config must not be null"
+    public YamlEnchantmentRepository(final File configurationFile) {
+        this.configurationFile = Objects.requireNonNull(
+                configurationFile,
+                "configurationFile must not be null"
         );
 
         load();
@@ -60,32 +62,70 @@ public class YamlEnchantmentRepository implements IEnchantmentRepository {
      */
     @Override
     public void load() {
+        final YamlConfiguration loadedConfiguration =
+                YamlConfiguration.loadConfiguration(
+                        configurationFile
+                );
+
+        final Map<String, ItemEnchantmentDto> loadedEnchantments =
+                loadEnchantments(loadedConfiguration);
+
+        enchantments.clear();
+        enchantments.putAll(loadedEnchantments);
+    }
+
+    /**
+     * YAML設定からEnchantment定義一覧を読み込む。
+     *
+     * @param configuration enchantments.ymlの読込結果
+     * @return Enchantment定義一覧
+     */
+    private Map<String, ItemEnchantmentDto> loadEnchantments(
+            final YamlConfiguration configuration
+    ) {
         final ConfigurationSection enchantmentsSection =
-                config.getConfigurationSection(ENCHANTMENTS_SECTION_PATH);
+                configuration.getConfigurationSection(
+                        ENCHANTMENTS_SECTION_PATH
+                );
 
         if (enchantmentsSection == null) {
-            return;
+            return Map.of();
         }
 
-        // reload時に削除済みの定義が残らないよう、
-        // 新しい定義を読み込む前にキャッシュを破棄する
-        enchantments.clear();
+        final Map<String, ItemEnchantmentDto> loadedEnchantments = new LinkedHashMap<>();
 
-        final Set<NamespacedKey> loadedKeys = new HashSet<>();
         final Registry<Enchantment> enchantmentRegistry =
                 RegistryAccess.registryAccess()
                         .getRegistry(RegistryKey.ENCHANTMENT);
 
-        for (String key : enchantmentsSection.getKeys(false)) {
+        Set<NamespacedKey> loadedKey = new HashSet<NamespacedKey>();
+
+        for (String enchantmentId : enchantmentsSection.getKeys(false)) {
             final ConfigurationSection enchantmentSection =
-                    enchantmentsSection.getConfigurationSection(key);
+                    enchantmentsSection.getConfigurationSection(
+                            enchantmentId
+                    );
 
             if (enchantmentSection == null) {
-                continue;
+                throw new ConfigurationException(
+                        "Enchantment定義がセクションではありません。"
+                                + " / enchantmentId="
+                                + enchantmentId
+                );
             }
 
-            enchantments.put(key, loadEnchantment(key, enchantmentSection, loadedKeys, enchantmentRegistry));
+            loadedEnchantments.put(
+                    enchantmentId,
+                    loadEnchantment(
+                            enchantmentId,
+                            enchantmentSection,
+                            loadedKey,
+                            enchantmentRegistry
+                    )
+            );
         }
+
+        return loadedEnchantments;
     }
 
     /**

@@ -14,6 +14,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.potion.PotionEffectType;
 
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -21,6 +22,19 @@ import java.util.Objects;
 
 /**
  * RPG プラグイン独自の効果情報用Repository
+ *
+ * <p>
+ * yaml structure</br>
+ * effects:</br>
+ * 　　effectId:</br>
+ * 　　　　effectName:</br>
+ * 　　　　type: string</br>
+ * 　　　　duration: int</br>
+ * 　　　　amplifier: int</br>
+ * 　　　　ambient: boolean</br>
+ * 　　　　particles: boolean</br>
+ * 　　　　icon: boolean</br>
+ * </p>
  */
 public class YamlEffectRepository implements IEffectRepository {
     /**
@@ -29,9 +43,9 @@ public class YamlEffectRepository implements IEffectRepository {
     private static final String EFFECTS_SECTION_PATH = "effects";
 
     /**
-     * effects.ymlの読み込み結果
+     * 効果定義ファイル。
      */
-    private final YamlConfiguration config;
+    private final File configurationFile;
 
     /**
      * 読み込み済み効果定義
@@ -47,13 +61,15 @@ public class YamlEffectRepository implements IEffectRepository {
     /**
      * YAML形式のItemEffectRepositoryを生成する。
      *
-     * @param config items.ymlの読み込み結果
-     * @throws NullPointerException configがnullの場合
+     * @param configurationFile effects.yml
+     * @throws NullPointerException configurationFileがnullの場合
      */
-    public YamlEffectRepository(final YamlConfiguration config) {
-        this.config = Objects.requireNonNull(
-                config,
-                "config must not be null"
+    public YamlEffectRepository(
+            final File configurationFile
+    ) {
+        this.configurationFile = Objects.requireNonNull(
+                configurationFile,
+                "configurationFile must not be null"
         );
 
         load();
@@ -61,30 +77,66 @@ public class YamlEffectRepository implements IEffectRepository {
 
     /**
      * {@inheritDoc}
+     *
+     * <p>
+     * ディスク上のeffects.ymlを読み直し、全定義の解析成功後に
+     * Repositoryのキャッシュを更新する。
+     * </p>
      */
     @Override
     public void load() {
+        final YamlConfiguration loadedConfiguration =
+                YamlConfiguration.loadConfiguration(
+                        configurationFile
+                );
+
+        final Map<String, ItemEffectDto> loadedEffects =
+                loadEffects(loadedConfiguration);
+
+        effects.clear();
+        effects.putAll(loadedEffects);
+    }
+
+    /**
+     * YAML設定からEffect定義一覧を読み込む。
+     *
+     * @param configuration effects.ymlの読込結果
+     * @return Effect定義一覧
+     */
+    private Map<String, ItemEffectDto> loadEffects(
+            final YamlConfiguration configuration
+    ) {
         final ConfigurationSection effectsSection =
-                config.getConfigurationSection(EFFECTS_SECTION_PATH);
+                configuration.getConfigurationSection(
+                        EFFECTS_SECTION_PATH
+                );
 
         if (effectsSection == null) {
-            return;
+            return Map.of();
         }
 
-        // reload時に削除済みの定義が残らないよう、
-        // 新しい定義を読み込む前にキャッシュを破棄する
-        effects.clear();
+        final Map<String, ItemEffectDto> loadedEffects = new LinkedHashMap<>();
 
-        for (String key : effectsSection.getKeys(false)) {
+        for (String effectId : effectsSection.getKeys(false)) {
             final ConfigurationSection effectSection =
-                    effectsSection.getConfigurationSection(key);
+                    effectsSection.getConfigurationSection(effectId);
 
             if (effectSection == null) {
-                continue;
+                throw new InvalidPropertyTypeException(
+                        effectId,
+                        "effects." + effectId,
+                        "section",
+                        effectSection.get(effectId)
+                );
             }
 
-            effects.put(key, loadEffect(key, effectSection));
+            loadedEffects.put(
+                    effectId,
+                    loadEffect(effectId, effectSection)
+            );
         }
+
+        return loadedEffects;
     }
 
     /**
@@ -98,8 +150,16 @@ public class YamlEffectRepository implements IEffectRepository {
             final String effectId,
             final ConfigurationSection section
     ) {
+        final String effectTypeName = requireString(
+                section,
+                "type",
+                effectId,
+                "effects." + effectId + ".type"
+        );
+
         final PotionEffectType effectType =
-                parsePotionEffectType(effectId);
+                parsePotionEffectType(effectId, effectTypeName);
+
         final int duration = requireInt(
                 section,
                 "duration",
@@ -116,28 +176,32 @@ public class YamlEffectRepository implements IEffectRepository {
                 0
         );
 
-        final boolean ambient = requireBoolean(
+        final boolean ambient = getBooleanOrDefault(
                 section,
                 "ambient",
                 effectId,
-                "effects." + effectId + ".ambient"
+                "effects." + effectId + ".ambient",
+                false
         );
 
-        final boolean particles = requireBoolean(
+        final boolean particles = getBooleanOrDefault(
                 section,
                 "particles",
                 effectId,
-                "effects." + effectId + ".particles"
+                "effects." + effectId + ".particles",
+                false
         );
 
-        final boolean icon = requireBoolean(
+        final boolean icon = getBooleanOrDefault(
                 section,
                 "icon",
                 effectId,
-                "effects." + effectId + ".icon"
+                "effects." + effectId + ".icon",
+                false
         );
 
         return new ItemEffectDto(
+                effectId,
                 effectType,
                 duration,
                 amplifier,
@@ -150,21 +214,24 @@ public class YamlEffectRepository implements IEffectRepository {
     /**
      * PotionEffect名をPotionEffectTypeへ変換する。
      *
-     * @param effectId 効果ID
+     * @param effectId       Effect定義ID
+     * @param effectTypeName MinecraftのPotionEffect名
      * @return PotionEffectType
      */
     private PotionEffectType parsePotionEffectType(
-            final String effectId
+            final String effectId,
+            final String effectTypeName
     ) {
         final NamespacedKey effectKey =
                 NamespacedKey.fromString(
-                        effectId.toLowerCase(Locale.ROOT)
+                        effectTypeName.toLowerCase(Locale.ROOT)
                 );
 
         if (effectKey == null) {
             throw new InvalidPropertyValueException(
                     effectId,
                     "effects." + effectId,
+                    effectTypeName,
                     "must be a valid namespaced key"
             );
         }
@@ -180,11 +247,56 @@ public class YamlEffectRepository implements IEffectRepository {
             throw new UnknownConfigurationValueException(
                     effectId,
                     "effects." + effectId,
-                    effectId
+                    effectTypeName
             );
         }
 
         return effectType;
+    }
+
+    /**
+     * 必須文字列値を取得する。
+     *
+     * @param section      読込対象セクション
+     * @param path         相対パス
+     * @param effectId     Effect定義ID
+     * @param propertyPath 完全なプロパティパス
+     * @return 検証済み文字列
+     */
+    private String requireString(
+            final ConfigurationSection section,
+            final String path,
+            final String effectId,
+            final String propertyPath
+    ) {
+        if (!section.isSet(path)) {
+            throw new RequiredPropertyException(
+                    effectId,
+                    propertyPath
+            );
+        }
+
+        final Object rawValue = section.get(path);
+
+        if (!(rawValue instanceof String value)) {
+            throw new InvalidPropertyTypeException(
+                    effectId,
+                    propertyPath,
+                    "string",
+                    rawValue
+            );
+        }
+
+        if (value.isBlank()) {
+            throw new InvalidPropertyValueException(
+                    effectId,
+                    propertyPath,
+                    rawValue,
+                    "must not be blank"
+            );
+        }
+
+        return value;
     }
 
     /**
@@ -257,16 +369,18 @@ public class YamlEffectRepository implements IEffectRepository {
      * @param path         相対パス
      * @param effectId     効果ID
      * @param propertyPath 完全なプロパティパス
+     * @param defaultValue デフォルト値
      * @return boolean値
      */
-    private boolean requireBoolean(
+    private boolean getBooleanOrDefault(
             final ConfigurationSection section,
             final String path,
             final String effectId,
-            final String propertyPath
+            final String propertyPath,
+            final boolean defaultValue
     ) {
         if (!section.isSet(path)) {
-            return false;
+            return defaultValue;
         }
 
         final Object rawValue = section.get(path);
@@ -296,6 +410,6 @@ public class YamlEffectRepository implements IEffectRepository {
      */
     @Override
     public Map<String, ItemEffectDto> findAll() {
-        return effects;
+        return Map.copyOf(effects);
     }
 }

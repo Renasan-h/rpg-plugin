@@ -19,12 +19,11 @@ commands:
     description: SHOPを開きます
     usage: /shop
   rpg:
-    description: RPGプラグイン管理コマンド
-    usage: /rpg reload
+
   admin:
-    description: RPGShop admin command
-    usage: /admin <reload|open|resetshop|resetall> <player>
-    permission: rpg.admin.shop
+    description: RPGプラグイン管理コマンド
+    usage: /admin [reload|resetshop] [<player>|<settingFilename>]
+    permission: rpg.admin
   devhelp:
     description: 開発用コマンド
     usage: /devhelp <hand> <amount>
@@ -40,7 +39,4 @@ permissions:
     default: op
   rpg.shop.vip:
     description: VIP SHOP商品を閲覧・購入できます
-    default: op
-  rpg.admin.shop:
-    description: 管理者によるユーザのSHOP履歴管理
     default: op

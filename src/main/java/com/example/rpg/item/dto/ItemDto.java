@@ -129,14 +129,16 @@ public class ItemDto {
                         "enchantments must not be null"
                 )
         );
-        this.attributes = Objects.requireNonNull(
-                attributes,
-                "attributes must not be null"
-        );
-        this.effects = Objects.requireNonNull(
-                effects,
-                "effects must not be null"
-        );
+        this.attributes = List.copyOf(
+                Objects.requireNonNull(
+                        attributes,
+                        "attributes must not be null"
+                ));
+        this.effects = List.copyOf(
+                Objects.requireNonNull(
+                        effects,
+                        "effects must not be null"
+                ));
     }
 
     /**

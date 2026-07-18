@@ -156,6 +156,12 @@ public final class ConfigurationValueReader {
             final int minimum,
             final int maximum
     ) {
+        validateArguments(
+                section,
+                path,
+                definitionId,
+                propertyPath
+        );
         validateRange(minimum, maximum);
 
         if (!section.isSet(path)) {

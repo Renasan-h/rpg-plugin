@@ -118,7 +118,7 @@ public class ShopMenu {
      * @param player 表示対象プレイヤー
      */
     public void openShopCategory(Player player) {
-        final ShopDto shop = shopRepository.getShopDto();
+        final ShopDto shop = shopRepository.getShop();
         final int inventorySize = normalizeInventorySize(shop.getSize());
 
         final Inventory inventory = Bukkit.createInventory(
@@ -154,7 +154,7 @@ public class ShopMenu {
             final ShopCategoryDto category,
             final int page
     ) {
-        final ShopDto shop = shopRepository.getShopDto();
+        final ShopDto shop = shopRepository.getShop();
         final int inventorySize = normalizeInventorySize(shop.getSize());
         final List<ShopItemDto> items = findDisplayableItems(player, category);
         final int pageSize = calculatePageSize(inventorySize);

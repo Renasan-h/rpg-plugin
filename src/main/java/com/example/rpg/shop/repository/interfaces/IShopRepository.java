@@ -31,7 +31,7 @@ public interface IShopRepository {
      * Repository内のみが保持し、外部から直接変更しないことを前提とする。
      * </p>
      */
-    ShopDto getShopDto();
+    ShopDto getShop();
 
     /**
      * 設定ファイルを読み込み {@link ShopDto} を生成し保持する

@@ -1,5 +1,7 @@
 package com.example.rpg.shop.repository;
 
+import com.example.rpg.common.exception.ConfigurationException;
+import com.example.rpg.common.exception.InvalidPropertyTypeException;
 import com.example.rpg.common.exception.InvalidPropertyValueException;
 import com.example.rpg.shop.dto.ShopCategoryDto;
 import com.example.rpg.shop.dto.ShopDto;
@@ -11,6 +13,7 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
+import java.io.File;
 import java.util.*;
 
 /**
@@ -30,7 +33,16 @@ import java.util.*;
  */
 public class YamlShopRepository implements IShopRepository {
 
-    private final YamlConfiguration config;
+    /**
+     * SHOP定義のルートセクション名
+     */
+    private static final String SHOP_SECTION_PATH = "shop";
+
+    /**
+     * SHOP設定ファイル
+     */
+    private final File configurationFile;
+
     /**
      * 読み込み済みのSHOP定義。
      *
@@ -39,117 +51,373 @@ public class YamlShopRepository implements IShopRepository {
      * Repository内のみが保持し、外部から直接変更しないことを前提とする。
      * </p>
      */
-    private ShopDto shopDto;
+    private ShopDto shop;
 
     /**
      * SHOP Repositoryを生成する。
      *
+     * @param configurationFile shop.yml
+     * @throws NullPointerException configurationFileがnullの場合
      */
-    public YamlShopRepository(YamlConfiguration config) {
-        this.config = config;
+    public YamlShopRepository(File configurationFile) {
+        this.configurationFile = Objects.requireNonNull(
+                configurationFile,
+                "configurationFile must not be null"
+        );
+
         load();
     }
 
     /**
      * {@inheritDoc}
+     *
+     * <p>
+     * ディスク上のshop.ymlを読み直し、すべての定義を正常に
+     * 解析できた場合のみ、現在のSHOP定義を更新する。
+     * </p>
      */
     public void load() {
-        ConfigurationSection shopSection = config.getConfigurationSection("shop");
+        final YamlConfiguration configuration =
+                YamlConfiguration.loadConfiguration(
+                        configurationFile
+                );
 
-        if (shopSection == null) {
-            throw new IllegalStateException("shop.yml に shop がありません");
-        }
+        /*
+         * loadShop内で例外が発生した場合、
+         * this.shopへの代入は行われない。
+         */
+        final ShopDto loadedShop =
+                loadShop(configuration);
 
-        String title = shopSection.getString("title", "<gold>SHOP</gold>");
-        int size = shopSection.getInt("size", 27);
-
-        Map<String, ShopCategoryDto> categories = new LinkedHashMap<>();
-
-        ConfigurationSection categoriesSection = shopSection.getConfigurationSection("categories");
-
-        if (categoriesSection != null) {
-            for (String categoryId : categoriesSection.getKeys(false)) {
-                ConfigurationSection categorySection = categoriesSection.getConfigurationSection(categoryId);
-
-                if (categorySection == null) {
-                    continue;
-                }
-
-                ShopCategoryDto category = loadCategory(categoryId, categorySection);
-                categories.put(categoryId, category);
-            }
-        }
-
-        this.shopDto = new ShopDto(title, size, categories);
+        this.shop = loadedShop;
     }
 
     /**
-     * 設定ファイル（config.yml）より取得した、情報をもとに各種アイテム情報を取得し {@link ShopCategoryDto} へ格納する
+     * YAML設定からSHOP定義を生成する。
      *
-     * @param id      categories配下のキー
-     * @param section config.ymlのcategories配下セクション
-     * @return {@link ShopCategoryDto} ショップカテゴリ情報
+     * @param configuration shop.ymlの読込結果
+     * @return SHOP定義
      */
-    private ShopCategoryDto loadCategory(String id, ConfigurationSection section) {
-        String name = section.getString("name", id);
-        int slot = RpgUtil.getIntOrDefault(section, "slot", 0);
+    private ShopDto loadShop(
+            final YamlConfiguration configuration
+    ) {
+        final ConfigurationSection shopSection =
+                configuration.getConfigurationSection(
+                        SHOP_SECTION_PATH
+                );
 
-        String iconText = section.getString("icon", "CHEST");
-        Material icon = Material.matchMaterial(iconText);
-
-        if (icon == null) {
-            throw new InvalidPropertyValueException(
-                    id,
-                    "category icon",
-                    iconText
+        if (shopSection == null) {
+            throw new ConfigurationException(
+                    "shop.yml に shop セクションがありません。"
             );
         }
 
-        Map<String, ShopItemDto> items = new LinkedHashMap<>();
+        final String title = shopSection.getString(
+                "title",
+                "<gold>SHOP</gold>"
+        );
 
-        ConfigurationSection itemsSection = section.getConfigurationSection("items");
+        final int size = loadInventorySize(shopSection);
 
-        if (itemsSection != null) {
-            for (String itemId : itemsSection.getKeys(false)) {
-                ConfigurationSection itemSection = itemsSection.getConfigurationSection(itemId);
+        final Map<String, ShopCategoryDto> categories =
+                loadCategories(shopSection);
 
-                if (itemSection == null) {
-                    continue;
-                }
-
-                ShopItemDto item = loadItem(itemId, itemSection);
-                items.put(itemId, item);
-            }
-        }
-
-        return new ShopCategoryDto(id, name, slot, icon, items);
+        return new ShopDto(
+                title,
+                size,
+                categories
+        );
     }
 
     /**
-     * 設定ファイル（config.yml）より取得した、情報をもとに各種アイテム情報を取得しShopItemDtoへ格納する
+     * SHOPインベントリサイズを読み込む。
      *
-     * @param id      item配下のキー
-     * @param section config.ymlのitems配下セクション
-     * @return {@link ShopItemDto} ショップアイテム情報
+     * @param shopSection shopセクション
+     * @return 検証済みインベントリサイズ
      */
-    private ShopItemDto loadItem(String id, ConfigurationSection section) {
-        int slot = RpgUtil.getIntOrDefault(section, "slot", 0);
+    private int loadInventorySize(
+            final ConfigurationSection shopSection
+    ) {
+        final Object rawValue =
+                shopSection.get("size", 27);
 
-        String typeText = section.getString("type", "ITEM");
-        ShopItemType type = ShopItemType.valueOf(typeText.toUpperCase());
+        if (!(rawValue instanceof Number number)) {
+            throw new InvalidPropertyTypeException(
+                    "shop",
+                    "shop.size",
+                    "integer",
+                    rawValue
+            );
+        }
 
-        String itemId = section.getString("itemId", id);
-        int price = section.getInt("price", 0);
-        // 売却額の指定がない場合は1/3の価格で設定する
-        int sellPrice = RpgUtil.getIntOrDefault(section, "sellPrice", price == 0 ? 0 : Math.round((float) price / 3));
-        int amount = RpgUtil.getIntOrDefault(section, "amount", 1);
-        int limit = RpgUtil.getIntOrDefault(section, "limit", -1);
+        final double value = number.doubleValue();
 
-        String permission = section.getString("permission", "");
-        List<String> commands = section.getStringList("commands");
+        if (!Double.isFinite(value)
+                || value != Math.rint(value)) {
+            throw new InvalidPropertyValueException(
+                    "shop",
+                    "shop.size",
+                    rawValue,
+                    "must be a finite integer"
+            );
+        }
+
+        final int size = (int) value;
+
+        /*
+         * Bukkit InventoryのCHEST形式は9の倍数で、
+         * 通常使用可能な範囲は9～54。
+         */
+        if (size < 9
+                || size > 54
+                || size % 9 != 0) {
+            throw new InvalidPropertyValueException(
+                    "shop",
+                    "shop.size",
+                    size,
+                    "must be a multiple of 9 between 9 and 54"
+            );
+        }
+
+        return size;
+    }
+
+    /**
+     * SHOPカテゴリ一覧を読み込む。
+     *
+     * @param shopSection shopセクション
+     * @return カテゴリ定義
+     */
+    private Map<String, ShopCategoryDto> loadCategories(
+            final ConfigurationSection shopSection
+    ) {
+        final ConfigurationSection categoriesSection =
+                shopSection.getConfigurationSection(
+                        "categories"
+                );
+
+        if (categoriesSection == null) {
+            return Map.of();
+        }
+
+        final Map<String, ShopCategoryDto> categories =
+                new LinkedHashMap<>();
+
+        for (String categoryId
+                : categoriesSection.getKeys(false)) {
+
+            final ConfigurationSection categorySection =
+                    categoriesSection.getConfigurationSection(
+                            categoryId
+                    );
+
+            if (categorySection == null) {
+                throw new InvalidPropertyTypeException(
+                        categoryId,
+                        "shop.categories." + categoryId,
+                        "section",
+                        categoriesSection.get(categoryId)
+                );
+            }
+
+            categories.put(
+                    categoryId,
+                    loadCategory(
+                            categoryId,
+                            categorySection
+                    )
+            );
+        }
+
+        return categories;
+    }
+
+    /**
+     * カテゴリ定義を読み込む。
+     *
+     * @param categoryId カテゴリID
+     * @param section    カテゴリ設定
+     * @return カテゴリ定義
+     */
+    private ShopCategoryDto loadCategory(
+            final String categoryId,
+            final ConfigurationSection section
+    ) {
+        final String name = section.getString(
+                "name",
+                categoryId
+        );
+
+        final int slot = RpgUtil.getIntOrDefault(
+                section,
+                "slot",
+                0
+        );
+
+        final String iconName = section.getString(
+                "icon",
+                "CHEST"
+        );
+
+        final Material icon =
+                Material.matchMaterial(iconName);
+
+        if (icon == null) {
+            throw new InvalidPropertyValueException(
+                    categoryId,
+                    "shop.categories."
+                            + categoryId
+                            + ".icon",
+                    iconName
+            );
+        }
+
+        final Map<String, ShopItemDto> items =
+                loadItems(
+                        categoryId,
+                        section
+                );
+
+        return new ShopCategoryDto(
+                categoryId,
+                name,
+                slot,
+                icon,
+                items
+        );
+    }
+
+    /**
+     * カテゴリ内の商品一覧を読み込む。
+     *
+     * @param categoryId カテゴリID
+     * @param section    カテゴリ設定
+     * @return 商品定義
+     */
+    private Map<String, ShopItemDto> loadItems(
+            final String categoryId,
+            final ConfigurationSection section
+    ) {
+        final ConfigurationSection itemsSection =
+                section.getConfigurationSection("items");
+
+        if (itemsSection == null) {
+            return Map.of();
+        }
+
+        final Map<String, ShopItemDto> items =
+                new LinkedHashMap<>();
+
+        for (String shopItemId
+                : itemsSection.getKeys(false)) {
+
+            final ConfigurationSection itemSection =
+                    itemsSection.getConfigurationSection(
+                            shopItemId
+                    );
+
+            if (itemSection == null) {
+                throw new InvalidPropertyTypeException(
+                        shopItemId,
+                        "shop.categories."
+                                + categoryId
+                                + ".items."
+                                + shopItemId,
+                        "section",
+                        itemsSection.get(shopItemId)
+                );
+            }
+
+            items.put(
+                    shopItemId,
+                    loadItem(
+                            categoryId,
+                            shopItemId,
+                            itemSection
+                    )
+            );
+        }
+
+        return items;
+    }
+
+    /**
+     * SHOP商品定義を読み込む。
+     *
+     * @param categoryId カテゴリID
+     * @param shopItemId SHOP商品ID
+     * @param section    商品設定
+     * @return SHOP商品定義
+     */
+    private ShopItemDto loadItem(
+            final String categoryId,
+            final String shopItemId,
+            final ConfigurationSection section
+    ) {
+        final int slot = RpgUtil.getIntOrDefault(
+                section,
+                "slot",
+                0
+        );
+
+        final ShopItemType type =
+                parseShopItemType(
+                        categoryId,
+                        shopItemId,
+                        section.getString(
+                                "type",
+                                "ITEM"
+                        )
+                );
+
+        final String itemId = section.getString(
+                "itemId",
+                shopItemId
+        );
+
+        final int price = RpgUtil.getIntOrDefault(
+                section,
+                "price",
+                0
+        );
+
+        /*
+         * 売却額が未指定の場合、購入価格の約1/3を設定する。
+         */
+        final int defaultSellPrice =
+                price == 0
+                        ? 0
+                        : Math.round((float) price / 3);
+
+        final int sellPrice =
+                RpgUtil.getIntOrDefault(
+                        section,
+                        "sellPrice",
+                        defaultSellPrice
+                );
+
+        final int amount = RpgUtil.getIntOrDefault(
+                section,
+                "amount",
+                1
+        );
+
+        final int limit = RpgUtil.getIntOrDefault(
+                section,
+                "limit",
+                -1
+        );
+
+        final String permission = section.getString(
+                "permission",
+                ""
+        );
+
+        final List<String> commands =
+                section.getStringList("commands");
 
         return new ShopItemDto(
-                id,
+                shopItemId,
                 itemId,
                 slot,
                 type,
@@ -163,68 +431,97 @@ public class YamlShopRepository implements IShopRepository {
     }
 
     /**
-     * {@inheritDoc}
+     * SHOP商品種別を解析する。
+     *
+     * @param categoryId カテゴリID
+     * @param shopItemId SHOP商品ID
+     * @param typeName   商品種別名
+     * @return SHOP商品種別
      */
-    public List<ShopCategoryDto> findCategories() {
-        return List.copyOf(new ArrayList<>(shopDto.getCategories().values()));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public ShopCategoryDto findShopCategoryById(String categoryId) {
-        return shopDto.getCategories().get(categoryId);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public List<ShopItemDto> findShopItems(String categoryId) {
-        ShopCategoryDto category = findShopCategoryById(categoryId);
-
-        if (category == null) {
-            return Collections.emptyList();
+    private ShopItemType parseShopItemType(
+            final String categoryId,
+            final String shopItemId,
+            final String typeName
+    ) {
+        try {
+            return ShopItemType.valueOf(
+                    typeName.toUpperCase(Locale.ROOT)
+            );
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidPropertyValueException(
+                    shopItemId,
+                    "shop.categories."
+                            + categoryId
+                            + ".items."
+                            + shopItemId
+                            + ".type",
+                    typeName
+            );
         }
-
-        return List.copyOf(category.getItems().values());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public ShopItemDto findShopItemById(String itemId) {
-        Map<String, ShopCategoryDto> categories = shopDto.getCategories();
-
-        if (categories.isEmpty()) {
-            return null;
-        }
-
-        for (ShopCategoryDto category : categories.values()) {
-            for (ShopItemDto item : category.getItems().values()) {
-                if (item.getId().equals(itemId)) {
-                    return item;
-                }
-            }
-
-        }
-        return null;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public ShopItemDto findShopSellableItem(final String itemId) {
-        if (itemId == null || itemId.isBlank()) {
+    public List<ShopCategoryDto> findCategories() {
+        return List.copyOf(
+                new ArrayList<>(
+                        shop.getCategories().values()
+                )
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ShopCategoryDto findShopCategoryById(
+            final String categoryId
+    ) {
+        return shop.getCategories().get(categoryId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<ShopItemDto> findShopItems(
+            final String categoryId
+    ) {
+        final ShopCategoryDto category =
+                findShopCategoryById(categoryId);
+
+        if (category == null) {
+            return Collections.emptyList();
+        }
+
+        return List.copyOf(
+                category.getItems().values()
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ShopItemDto findShopItemById(
+            final String shopItemId
+    ) {
+        if (shopItemId == null
+                || shopItemId.isBlank()) {
             return null;
         }
 
-        return shopDto.getCategories()
+        return shop.getCategories()
                 .values()
                 .stream()
-                .flatMap(category -> category.getItems().values().stream())
-                .filter(ShopItemDto::isSellable)
-                .filter(item -> item.getItemId().equals(itemId))
+                .flatMap(category ->
+                        category.getItems()
+                                .values()
+                                .stream())
+                .filter(item ->
+                        item.getId().equals(shopItemId))
                 .findFirst()
                 .orElse(null);
     }
@@ -232,7 +529,34 @@ public class YamlShopRepository implements IShopRepository {
     /**
      * {@inheritDoc}
      */
-    public ShopDto getShopDto() {
-        return this.shopDto;
+    @Override
+    public ShopItemDto findShopSellableItem(
+            final String itemId
+    ) {
+        if (itemId == null
+                || itemId.isBlank()) {
+            return null;
+        }
+
+        return shop.getCategories()
+                .values()
+                .stream()
+                .flatMap(category ->
+                        category.getItems()
+                                .values()
+                                .stream())
+                .filter(ShopItemDto::isSellable)
+                .filter(item ->
+                        item.getItemId().equals(itemId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ShopDto getShop() {
+        return shop;
     }
 }

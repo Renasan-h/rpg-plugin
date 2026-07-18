@@ -5,6 +5,7 @@ import com.example.rpg.item.repository.interfaces.IAttributeRepository;
 import com.example.rpg.item.repository.interfaces.IEffectRepository;
 import com.example.rpg.item.repository.interfaces.IEnchantmentRepository;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
+import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
@@ -39,6 +40,11 @@ public final class ConfigurationReloadService {
     private final IEffectRepository effectRepository;
 
     /**
+     * SHOP Repository。
+     */
+    private final IShopRepository shopRepository;
+
+    /**
      * 設定再読み込みServiceを生成する。
      *
      * @param plugin                プラグイン本体
@@ -52,7 +58,8 @@ public final class ConfigurationReloadService {
             final IItemRepository itemRepository,
             final IAttributeRepository attributeRepository,
             final IEnchantmentRepository enchantmentRepository,
-            final IEffectRepository effectRepository
+            final IEffectRepository effectRepository,
+            final IShopRepository shopRepository
     ) {
         this.plugin = Objects.requireNonNull(
                 plugin,
@@ -74,6 +81,10 @@ public final class ConfigurationReloadService {
                 effectRepository,
                 "effectRepository must not be null"
         );
+        this.shopRepository = Objects.requireNonNull(
+                shopRepository,
+                "shopRepository must not be null"
+        );
     }
 
     /**
@@ -94,6 +105,7 @@ public final class ConfigurationReloadService {
             case ATTRIBUTES -> reloadAttributes();
             case ENCHANTMENTS -> reloadEnchantments();
             case EFFECTS -> reloadEffects();
+            case SHOP -> reloadShop();
         }
 
         plugin.getLogger().info(
@@ -111,6 +123,7 @@ public final class ConfigurationReloadService {
         reloadAttributes();
         reloadEnchantments();
         reloadEffects();
+        reloadShop();
     }
 
     /**
@@ -146,5 +159,12 @@ public final class ConfigurationReloadService {
      */
     private void reloadEffects() {
         effectRepository.load();
+    }
+
+    /**
+     * shop.ymlを再読み込みする。
+     */
+    private void reloadShop() {
+        shopRepository.load();
     }
 }

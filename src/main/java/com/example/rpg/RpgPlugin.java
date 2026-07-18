@@ -35,7 +35,6 @@ import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.shop.service.ShopService;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -161,8 +160,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      */
     private void initializeRepositories() {
 
-        this.shopRepository = new YamlShopRepository(
-                YamlConfiguration.loadConfiguration(new File(getDataFolder(), "shop.yml")));
+        this.shopRepository = new YamlShopRepository(new File(getDataFolder(), "shop.yml"));
         this.moneyRepository = new MoneyRepository(
                 this, new File(getDataFolder(), "money.yml"));
         this.shopPurchaseRepository = new ShopPurchaseRepository(
@@ -195,7 +193,8 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                         itemRepository,
                         attributeRepository,
                         enchantmentRepository,
-                        effectRepository
+                        effectRepository,
+                        shopRepository
                 );
     }
 

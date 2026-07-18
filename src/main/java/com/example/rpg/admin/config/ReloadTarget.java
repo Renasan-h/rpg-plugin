@@ -38,7 +38,12 @@ public enum ReloadTarget {
     /**
      * effects.yml。
      */
-    EFFECTS("effects");
+    EFFECTS("effects"),
+
+    /**
+     * shop.yml。
+     */
+    SHOP("shop");
 
     /**
      * コマンド上の識別子。

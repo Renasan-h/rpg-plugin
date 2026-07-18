@@ -1,8 +1,9 @@
 package com.example.rpg.item.repository;
 
 
+import com.example.rpg.common.config.ConfigurationValueReader;
 import com.example.rpg.common.exception.ConfigurationException;
-import com.example.rpg.common.exception.InvalidPropertyTypeException;
+import com.example.rpg.common.exception.InvalidEnumValueException;
 import com.example.rpg.common.exception.UnknownConfigurationValueException;
 import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemDto;
@@ -19,9 +20,21 @@ import java.util.*;
  * items.ymlからRPGアイテム定義を読み込むRepository
  *
  * <p>
- * YAMLの構造解析とDTOへの変換を担当する。
- * 読み込んだアイテムはRepository内部のMapへ保持し、
- * 呼び出し側へMapを公開しない。
+ * yaml structure</br>
+ * items:</br>
+ * 　　itemId:</br>
+ * 　　　　material: {@link Material}</br>
+ * 　　　　displayName: {@link String} display item name</br>
+ * 　　　　lore:</br>
+ * 　　　　　　- {@link String} item description</br>
+ * 　　　　itemFlags:</br>
+ * 　　　　　　- {@link ItemFlag}</br>
+ * 　　　　unbreakable: {@link Boolean}</br>
+ * 　　　　customModelData: {@link Integer}</br>
+ * 　　　　enchantments:</br>
+ * 　　　　　　- {@link String} enchan22tmentId</br>
+ * 　　　　attributes:</br>
+ * 　　　　　　- {@link String} attributeId</br>
  * </p>
  */
 public class YamlItemRepository extends AbstractYamlRepository<Map<String, ItemDto>> implements IItemRepository {
@@ -73,20 +86,26 @@ public class YamlItemRepository extends AbstractYamlRepository<Map<String, ItemD
         final Map<String, ItemDto> loadedItems = new LinkedHashMap<>();
 
         for (String itemId : itemsSection.getKeys(false)) {
-            final ConfigurationSection itemSection =
-                    itemsSection.getConfigurationSection(itemId);
+            final String propertyRoot =
+                    ITEMS_SECTION_PATH
+                            + "."
+                            + itemId;
 
-            if (itemSection == null) {
-                throw new ConfigurationException(
-                        "アイテム定義がセクションではありません。"
-                                + " / itemId="
-                                + itemId
-                );
-            }
+            final ConfigurationSection itemSection =
+                    ConfigurationValueReader.requireSection(
+                            itemsSection,
+                            itemId,
+                            itemId,
+                            propertyRoot
+                    );
 
             loadedItems.put(
                     itemId,
-                    loadItem(itemId, itemSection)
+                    loadItem(
+                            itemId,
+                            propertyRoot,
+                            itemSection
+                    )
             );
         }
 
@@ -98,54 +117,91 @@ public class YamlItemRepository extends AbstractYamlRepository<Map<String, ItemD
     /**
      * YAMLセクションからアイテム定義を生成する。
      *
-     * @param itemId  ItemId
-     * @param section アイテム定義セクション
+     * @param itemId       ItemId
+     * @param propertyRoot 定義の完全パス
+     * @param section      アイテム定義セクション
      * @return 生成したItemDto
      * @throws UnknownConfigurationValueException レジストリ値不正
      */
     private ItemDto loadItem(
             final String itemId,
+            final String propertyRoot,
             final ConfigurationSection section
     ) {
-        final String materialName = section.getString("material", "STONE");
+        final String materialName = ConfigurationValueReader.getStringOrDefault(
+                section,
+                "material",
+                itemId,
+                propertyRoot + ".material",
+                "STONE");
 
-        final Material material = Material.matchMaterial(materialName);
+        final Material material = parseMaterial(
+                itemId,
+                propertyRoot,
+                materialName
+        );
 
-        if (material == null) {
-            throw new UnknownConfigurationValueException(
-                    itemId,
-                    "Material",
-                    materialName
-            );
-        }
+        final String displayName = ConfigurationValueReader.getStringOrDefault(
+                section,
+                "displayName",
+                itemId,
+                propertyRoot + ".displayName",
+                "<white>" + itemId + "</white>"
+        );
 
-        final String displayName = section.getString("displayName", "<white>" + itemId + "</white>");
-
-        final List<String> lore = section.getStringList("lore");
+        final List<String> lore = ConfigurationValueReader.getStringListOrEmpty(
+                section,
+                "lore",
+                itemId,
+                propertyRoot + ".lore"
+        );
 
         final List<ItemFlag> itemFlags = loadItemFlags(
                 itemId,
+                propertyRoot,
                 section
         );
 
-        final boolean unbreakable = section.getBoolean(
+        final boolean unbreakable = ConfigurationValueReader.getBooleanOrDefault(
+                section,
                 "unbreakable",
+                itemId,
+                propertyRoot + ".unbreakable",
                 false
         );
 
-        final Integer customModelData = loadCustomModelData(
+        final Integer customModelData = ConfigurationValueReader.getOptionalInt(
+                section,
+                "customModelData",
                 itemId,
-                section
+                propertyRoot + ".customModelData",
+                0,
+                Integer.MAX_VALUE
         );
 
         final List<String> enchantments =
-                loadEnchantments(itemId, section);
+                ConfigurationValueReader.getStringListOrEmpty(
+                        section,
+                        "enchantments",
+                        itemId,
+                        propertyRoot + ".enchantments"
+                );
 
         final List<String> attributes =
-                loadAttributes(itemId, section);
+                ConfigurationValueReader.getStringListOrEmpty(
+                        section,
+                        "attributes",
+                        itemId,
+                        propertyRoot + ".attributes"
+                );
 
         final List<String> effects =
-                loadEffects(itemId, section);
+                ConfigurationValueReader.getStringListOrEmpty(
+                        section,
+                        "effects",
+                        itemId,
+                        propertyRoot + ".effects"
+                );
 
         return new ItemDto(
                 itemId,
@@ -162,169 +218,100 @@ public class YamlItemRepository extends AbstractYamlRepository<Map<String, ItemD
     }
 
     /**
-     * YAMLからItemFlag一覧を読み込む
+     * Material名をBukkit Materialへ変換する。
      *
-     * <p>
-     * 文字列からBukkitのItemFlagへの変換はRepository内で行い、
-     * ItemBuilderへ設定ファイルの形式を漏らさない。
-     * </p>
+     * @param itemId       アイテム定義ID
+     * @param propertyRoot 定義の完全パス
+     * @param materialName Material名
+     * @return Bukkit Material
+     */
+    private Material parseMaterial(
+            final String itemId,
+            final String propertyRoot,
+            final String materialName
+    ) {
+        final Material material =
+                Material.matchMaterial(materialName);
+
+        if (material == null) {
+            throw new UnknownConfigurationValueException(
+                    itemId,
+                    propertyRoot + ".material",
+                    materialName
+            );
+        }
+
+        return material;
+    }
+
+    /**
+     * YAMLからItemFlag一覧を読み込む。
      *
-     * @param itemId  アイテムID
-     * @param section アイテム設定セクション
+     * @param itemId       アイテム定義ID
+     * @param propertyRoot 定義の完全パス
+     * @param section      アイテム設定
      * @return ItemFlag一覧
-     * @throws IllegalArgumentException 未対応のItemFlagが指定された場合
      */
     private List<ItemFlag> loadItemFlags(
             final String itemId,
+            final String propertyRoot,
             final ConfigurationSection section
     ) {
-        return section.getStringList("itemFlags")
-                .stream()
-                .map(flaName -> parseItemFlag(itemId, flaName))
-                .toList();
+        final List<String> flagNames =
+                ConfigurationValueReader.getStringListOrEmpty(
+                        section,
+                        "itemFlags",
+                        itemId,
+                        propertyRoot + ".itemFlags"
+                );
+
+        final List<ItemFlag> itemFlags =
+                new ArrayList<>(flagNames.size());
+
+        for (int index = 0;
+             index < flagNames.size();
+             index++) {
+
+            itemFlags.add(
+                    parseItemFlag(
+                            itemId,
+                            propertyRoot
+                                    + ".itemFlags["
+                                    + index
+                                    + "]",
+                            flagNames.get(index)
+                    )
+            );
+        }
+
+        return List.copyOf(itemFlags);
     }
 
     /**
-     * ItemFlag名をBukkitのItemFlagへ変換する。
+     * ItemFlag名をBukkit ItemFlagへ変換する。
      *
-     * @param itemId   アイテムID
-     * @param flagName ItemFlag名
-     * @return 変換したItemFlag
-     * @throws UnknownConfigurationValueException 未対応のItemFlagが指定された場合
+     * @param itemId       アイテム定義ID
+     * @param propertyPath ItemFlag要素の完全パス
+     * @param flagName     ItemFlag名
+     * @return ItemFlag
      */
     private ItemFlag parseItemFlag(
             final String itemId,
+            final String propertyPath,
             final String flagName
     ) {
         try {
-            return ItemFlag.valueOf(flagName.toUpperCase(Locale.ROOT));
-        } catch (UnknownConfigurationValueException ex) {
-            throw new UnknownConfigurationValueException(
+            return ItemFlag.valueOf(
+                    flagName.toUpperCase(Locale.ROOT)
+            );
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidEnumValueException(
                     itemId,
-                    "ItemFlag",
-                    flagName
+                    propertyPath,
+                    flagName,
+                    ItemFlag.class
             );
         }
-    }
-
-    /**
-     * YAMLからCustomModelDataを読み込む。
-     *
-     * <p>
-     * Paper 1.21.5以降では従来の整数CustomModelDataが、
-     * CustomModelDataComponent内の単一floatとして扱われる。
-     * </p>
-     *
-     * @param itemId  アイテムID
-     * @param section アイテム設定セクション
-     * @return CustomModelData 未指定の場合はnull
-     * @throws InvalidPropertyTypeException 数値以外または有限値でない場合
-     */
-    private Integer loadCustomModelData(
-            final String itemId,
-            final ConfigurationSection section
-    ) {
-        if (!section.isSet("customModelData")) {
-            return null;
-        }
-
-        final Object rawValue = section.get("customModelData");
-
-        if (!(rawValue instanceof Number number)) {
-            throw new InvalidPropertyTypeException(
-                    itemId,
-                    "item",
-                    "customModelData",
-                    "integer"
-            );
-        }
-
-        final double doubleValue = number.doubleValue();
-
-        if (!Double.isFinite(doubleValue)
-                || doubleValue != Math.rint(doubleValue)) {
-            throw new InvalidPropertyTypeException(
-                    itemId,
-                    "item",
-                    "customModelData",
-                    "Infinite"
-            );
-        }
-
-        if (doubleValue < 0 || doubleValue > Integer.MAX_VALUE) {
-            throw new InvalidPropertyTypeException(
-                    itemId,
-                    "customModelData",
-                    "is out of range",
-                    doubleValue
-            );
-        }
-
-        return (int) doubleValue;
-    }
-
-    /**
-     * YAMLからエンチャント一覧を読み込む。
-     *
-     * @param itemId  アイテムID
-     * @param section アイテム設定セクション
-     * @return エンチャント一覧
-     * @throws IllegalArgumentException 設定値が不正な場合
-     */
-    private List<String> loadEnchantments(
-            final String itemId,
-            final ConfigurationSection section
-    ) {
-        final List<String> enchantments =
-                section.getStringList("enchantments");
-
-        if (enchantments.isEmpty()) {
-            return List.of();
-        }
-
-        return enchantments;
-    }
-
-    /**
-     * YAMLからAttributeID一覧を読み込む。
-     *
-     * @param itemId  アイテムID
-     * @param section アイテム設定
-     * @return AttributeModifier一覧
-     */
-    private List<String> loadAttributes(
-            final String itemId,
-            final ConfigurationSection section
-    ) {
-        final List<String> attributes =
-                section.getStringList("attributes");
-
-        if (attributes.isEmpty()) {
-            return List.of();
-        }
-
-        return attributes;
-    }
-
-    /**
-     * YAMLからPotionEffect一覧を読み込む。
-     *
-     * @param itemId  アイテムID
-     * @param section アイテム設定
-     * @return PotionEffect一覧
-     */
-    private List<String> loadEffects(
-            final String itemId,
-            final ConfigurationSection section
-    ) {
-        final List<String> effects =
-                section.getStringList("effects");
-
-        if (effects.isEmpty()) {
-            return List.of();
-        }
-
-        return effects;
     }
 
     /**
@@ -341,7 +328,7 @@ public class YamlItemRepository extends AbstractYamlRepository<Map<String, ItemD
     @Override
     public List<ItemDto> findAll() {
         return List.copyOf(
-                new ArrayList<>(getCurrentData().values())
+                getCurrentData().values()
         );
     }
 }

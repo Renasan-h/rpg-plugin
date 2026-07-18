@@ -1,8 +1,7 @@
 package com.example.rpg.item.repository;
 
-import com.example.rpg.common.exception.InvalidPropertyTypeException;
+import com.example.rpg.common.config.ConfigurationValueReader;
 import com.example.rpg.common.exception.InvalidPropertyValueException;
-import com.example.rpg.common.exception.RequiredPropertyException;
 import com.example.rpg.common.exception.UnknownConfigurationValueException;
 import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemEffectDto;
@@ -28,12 +27,12 @@ import java.util.Map;
  * effects:</br>
  * 　　effectId:</br>
  * 　　　　effectName:</br>
- * 　　　　type: string</br>
- * 　　　　duration: int</br>
- * 　　　　amplifier: int</br>
- * 　　　　ambient: boolean</br>
- * 　　　　particles: boolean</br>
- * 　　　　icon: boolean</br>
+ * 　　　　type: {@link String}</br>
+ * 　　　　duration: {@link Integer}</br>
+ * 　　　　amplifier: {@link Integer}</br>
+ * 　　　　ambient: {@link Boolean}</br>
+ * 　　　　particles: {@link Boolean}</br>
+ * 　　　　icon: {@link Boolean}</br>
  * </p>
  */
 public class YamlEffectRepository extends AbstractYamlRepository<Map<String, ItemEffectDto>> implements IEffectRepository {
@@ -51,7 +50,6 @@ public class YamlEffectRepository extends AbstractYamlRepository<Map<String, Ite
             final File configurationFile
     ) {
         super(configurationFile);
-
         load();
     }
 
@@ -86,16 +84,12 @@ public class YamlEffectRepository extends AbstractYamlRepository<Map<String, Ite
 
         for (String effectId : effectsSection.getKeys(false)) {
             final ConfigurationSection effectSection =
-                    effectsSection.getConfigurationSection(effectId);
-
-            if (effectSection == null) {
-                throw new InvalidPropertyTypeException(
-                        effectId,
-                        "effects." + effectId,
-                        "section",
-                        effectSection.get(effectId)
-                );
-            }
+                    ConfigurationValueReader.requireSection(
+                            effectsSection,
+                            effectId,
+                            effectId,
+                            "effects." + effectId
+                    );
 
             loadedEffects.put(
                     effectId,
@@ -117,53 +111,58 @@ public class YamlEffectRepository extends AbstractYamlRepository<Map<String, Ite
             final String effectId,
             final ConfigurationSection section
     ) {
-        final String effectTypeName = requireString(
+        final String propertyRoot =
+                "effects." + effectId;
+
+        final String effectTypeName = ConfigurationValueReader.requireString(
                 section,
                 "type",
                 effectId,
-                "effects." + effectId + ".type"
+                propertyRoot + ".type"
         );
 
         final PotionEffectType effectType =
                 parsePotionEffectType(effectId, effectTypeName);
 
-        final int duration = requireInt(
+        final int duration = ConfigurationValueReader.requireInt(
                 section,
                 "duration",
                 effectId,
-                "effects." + effectId + ".duration",
-                1
+                propertyRoot + ".duration",
+                1,
+                Integer.MAX_VALUE
         );
 
-        final int amplifier = requireInt(
+        final int amplifier = ConfigurationValueReader.requireInt(
                 section,
                 "amplifier",
                 effectId,
-                "effects." + effectId + ".amplifier",
-                0
+                propertyRoot + ".amplifier",
+                0,
+                Integer.MAX_VALUE
         );
 
-        final boolean ambient = getBooleanOrDefault(
+        final boolean ambient = ConfigurationValueReader.getBooleanOrDefault(
                 section,
                 "ambient",
                 effectId,
-                "effects." + effectId + ".ambient",
+                propertyRoot + ".ambient",
                 false
         );
 
-        final boolean particles = getBooleanOrDefault(
+        final boolean particles = ConfigurationValueReader.getBooleanOrDefault(
                 section,
                 "particles",
                 effectId,
-                "effects." + effectId + ".particles",
+                propertyRoot + ".particles",
                 false
         );
 
-        final boolean icon = getBooleanOrDefault(
+        final boolean icon = ConfigurationValueReader.getBooleanOrDefault(
                 section,
                 "icon",
                 effectId,
-                "effects." + effectId + ".icon",
+                propertyRoot + ".icon",
                 false
         );
 
@@ -219,149 +218,6 @@ public class YamlEffectRepository extends AbstractYamlRepository<Map<String, Ite
         }
 
         return effectType;
-    }
-
-    /**
-     * 必須文字列値を取得する。
-     *
-     * @param section      読込対象セクション
-     * @param path         相対パス
-     * @param effectId     Effect定義ID
-     * @param propertyPath 完全なプロパティパス
-     * @return 検証済み文字列
-     */
-    private String requireString(
-            final ConfigurationSection section,
-            final String path,
-            final String effectId,
-            final String propertyPath
-    ) {
-        if (!section.isSet(path)) {
-            throw new RequiredPropertyException(
-                    effectId,
-                    propertyPath
-            );
-        }
-
-        final Object rawValue = section.get(path);
-
-        if (!(rawValue instanceof String value)) {
-            throw new InvalidPropertyTypeException(
-                    effectId,
-                    propertyPath,
-                    "string",
-                    rawValue
-            );
-        }
-
-        if (value.isBlank()) {
-            throw new InvalidPropertyValueException(
-                    effectId,
-                    propertyPath,
-                    rawValue,
-                    "must not be blank"
-            );
-        }
-
-        return value;
-    }
-
-    /**
-     * 必須整数値を取得する。
-     *
-     * @param section      読込対象セクション
-     * @param path         相対パス
-     * @param effectId     効果ID
-     * @param propertyPath 完全なプロパティパス
-     * @param minimum      最小値
-     * @return 検証済み整数値
-     */
-    private int requireInt(
-            final ConfigurationSection section,
-            final String path,
-            final String effectId,
-            final String propertyPath,
-            final int minimum
-    ) {
-        if (!section.isSet(path)) {
-            throw new RequiredPropertyException(
-                    effectId,
-                    propertyPath
-            );
-        }
-
-        final Object rawValue = section.get(path);
-
-        if (!(rawValue instanceof Number number)) {
-            throw new InvalidPropertyTypeException(
-                    effectId,
-                    propertyPath,
-                    "integer",
-                    rawValue
-            );
-        }
-
-        final double value = number.doubleValue();
-
-        if (!Double.isFinite(value)
-                || value != Math.rint(value)) {
-            throw new InvalidPropertyValueException(
-                    effectId,
-                    propertyPath,
-                    rawValue,
-                    "must be a finite integer"
-            );
-        }
-
-        if (value < minimum
-                || value > Integer.MAX_VALUE) {
-            throw new InvalidPropertyValueException(
-                    effectId,
-                    propertyPath,
-                    rawValue,
-                    "must be between"
-                            + minimum
-                            + " and "
-                            + Integer.MAX_VALUE
-            );
-        }
-
-        return (int) value;
-    }
-
-    /**
-     * 必須boolean値を取得する。
-     *
-     * @param section      読込対象セクション
-     * @param path         相対パス
-     * @param effectId     効果ID
-     * @param propertyPath 完全なプロパティパス
-     * @param defaultValue デフォルト値
-     * @return boolean値
-     */
-    private boolean getBooleanOrDefault(
-            final ConfigurationSection section,
-            final String path,
-            final String effectId,
-            final String propertyPath,
-            final boolean defaultValue
-    ) {
-        if (!section.isSet(path)) {
-            return defaultValue;
-        }
-
-        final Object rawValue = section.get(path);
-
-        if (!(rawValue instanceof Boolean value)) {
-            throw new InvalidPropertyTypeException(
-                    effectId,
-                    propertyPath,
-                    "boolean",
-                    rawValue
-            );
-        }
-
-        return value;
     }
 
     /**

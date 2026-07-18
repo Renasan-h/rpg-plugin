@@ -1,7 +1,6 @@
 package com.example.rpg.item.repository;
 
-import com.example.rpg.common.exception.ConfigurationException;
-import com.example.rpg.common.exception.InvalidPropertyTypeException;
+import com.example.rpg.common.config.ConfigurationValueReader;
 import com.example.rpg.common.exception.InvalidPropertyValueException;
 import com.example.rpg.common.exception.UnknownConfigurationValueException;
 import com.example.rpg.common.repository.AbstractYamlRepository;
@@ -20,21 +19,28 @@ import java.util.*;
 
 /**
  * RPG プラグイン独自のエンチャント情報用Repository
+ *
+ * <p>
+ * yaml structure</br>
+ * enchantments:</br>
+ * 　　enchantmentId:</br>
+ * 　　　　level: {@link Integer}</br>
+ * 　　　　ignoreLevelRestriction: {@link Boolean}</br>
+ * </p>
  */
 public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String, ItemEnchantmentDto>> implements IEnchantmentRepository {
     /**
-     * 効果定義のルートセクション名
+     * Enchantment定義のルートセクション名
      */
     private static final String ENCHANTMENTS_SECTION_PATH = "enchantments";
 
     /**
-     * YAML形式のItemEnchantmentRepositoryを生成する。
+     * YAML形式のEnchantmentRepositoryを生成する。
      *
-     * @param configurationFile enchantments.ymlの読み込み結果
+     * @param configurationFile enchantments.yml
      */
     public YamlEnchantmentRepository(final File configurationFile) {
         super(configurationFile);
-
         load();
     }
 
@@ -71,26 +77,31 @@ public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String
                 RegistryAccess.registryAccess()
                         .getRegistry(RegistryKey.ENCHANTMENT);
 
-        Set<NamespacedKey> loadedKey = new HashSet<NamespacedKey>();
+        /*
+         * sharpnessとminecraft:sharpnessのように、
+         * 正規化後に同じNamespacedKeyとなる定義を検知する。
+         */
+        final Set<NamespacedKey> loadedKey = new HashSet<NamespacedKey>();
 
         for (String enchantmentId : enchantmentsSection.getKeys(false)) {
-            final ConfigurationSection enchantmentSection =
-                    enchantmentsSection.getConfigurationSection(
-                            enchantmentId
-                    );
+            final String propertyRoot =
+                    ENCHANTMENTS_SECTION_PATH
+                            + "."
+                            + enchantmentId;
 
-            if (enchantmentSection == null) {
-                throw new ConfigurationException(
-                        "Enchantment定義がセクションではありません。"
-                                + " / enchantmentId="
-                                + enchantmentId
-                );
-            }
+            final ConfigurationSection enchantmentSection =
+                    ConfigurationValueReader.requireSection(
+                            enchantmentsSection,
+                            enchantmentId,
+                            enchantmentId,
+                            propertyRoot
+                    );
 
             loadedEnchantments.put(
                     enchantmentId,
                     loadEnchantment(
                             enchantmentId,
+                            propertyRoot,
                             enchantmentSection,
                             loadedKey,
                             enchantmentRegistry
@@ -105,6 +116,7 @@ public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String
      * Enchantmentを読み込む。
      *
      * @param enchantmentId       効果ID
+     * @param propertyRoot        定義の完全パス
      * @param section             Enchantment設定
      * @param loadedKeys          エンチャント重複確認用
      * @param enchantmentRegistry minecraftに登録されているエンチャントの定義
@@ -112,49 +124,54 @@ public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String
      */
     private ItemEnchantmentDto loadEnchantment(
             final String enchantmentId,
+            final String propertyRoot,
             final ConfigurationSection section,
             final Set<NamespacedKey> loadedKeys,
             final Registry<Enchantment> enchantmentRegistry
     ) {
         final NamespacedKey enchantmentKey =
                 parseEnchantmentKey(
-                        enchantmentId
+                        enchantmentId,
+                        propertyRoot
                 );
 
-        if (!loadedKeys.add(enchantmentKey)) {
-            throw new InvalidPropertyTypeException(
-                    enchantmentId,
-                    "enchantment",
-                    "Duplicate",
-                    enchantmentKey
-            );
-        }
+        validateDuplicateKey(
+                enchantmentId,
+                propertyRoot,
+                enchantmentKey,
+                loadedKeys
+        );
 
         final Enchantment enchantment =
-                enchantmentRegistry.get(enchantmentKey);
+                findEnchantment(
+                        enchantmentId,
+                        propertyRoot,
+                        enchantmentKey,
+                        enchantmentRegistry
+                );
 
-        if (enchantment == null) {
-            throw new UnknownConfigurationValueException(
-                    enchantmentId,
-                    "enchantment",
-                    enchantmentKey.getKey()
-            );
-        }
-
-        final int level = loadEnchantmentLevel(
+        final int level = ConfigurationValueReader.requireInt(
+                section,
+                "level",
                 enchantmentId,
-                enchantmentKey,
-                section
+                propertyRoot + ".level",
+                1,
+                Integer.MAX_VALUE
         );
 
         final boolean ignoreLevelRestriction =
-                section.getBoolean(
+                ConfigurationValueReader.getBooleanOrDefault(
+                        section,
                         "ignoreLevelRestriction",
+                        enchantmentId,
+                        propertyRoot
+                                + ".ignoreLevelRestriction",
                         false
                 );
 
         validateEnchantmentLevel(
                 enchantmentId,
+                propertyRoot,
                 enchantment,
                 level,
                 ignoreLevelRestriction
@@ -168,17 +185,19 @@ public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String
     }
 
     /**
-     * エンチャント名をNamespacedKeyへ変換する。
+     * Enchantment定義IDをNamespacedKeyへ変換する。
      *
      * <p>
      * 名前空間が省略された場合はminecraft名前空間を使用する。
      * </p>
      *
-     * @param enchantmentId エンチャントID
+     * @param enchantmentId Enchantment定義ID
+     * @param propertyRoot  定義の完全パス
      * @return NamespacedKey
      */
     private NamespacedKey parseEnchantmentKey(
-            final String enchantmentId
+            final String enchantmentId,
+            final String propertyRoot
     ) {
         final String normalizedName =
                 enchantmentId.toLowerCase(Locale.ROOT);
@@ -189,7 +208,8 @@ public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String
         if (key == null) {
             throw new InvalidPropertyValueException(
                     enchantmentId,
-                    ENCHANTMENTS_SECTION_PATH + "." + enchantmentId,
+                    propertyRoot,
+                    enchantmentId,
                     "enchantment key"
             );
         }
@@ -198,58 +218,72 @@ public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String
     }
 
     /**
-     * エンチャントレベルを読み込む。
+     * 正規化後のEnchantmentキーが重複していないことを確認する。
      *
-     * @param enchantmentId      エンチャントID
-     * @param enchantmentKey     エンチャントキー
-     * @param enchantmentSection エンチャント設定
-     * @return エンチャントレベル
+     * @param enchantmentId  Enchantment定義ID
+     * @param propertyRoot   定義の完全パス
+     * @param enchantmentKey Enchantmentキー
+     * @param loadedKeys     読込済みキー
      */
-    private int loadEnchantmentLevel(
+    private void validateDuplicateKey(
             final String enchantmentId,
+            final String propertyRoot,
             final NamespacedKey enchantmentKey,
-            final ConfigurationSection enchantmentSection
+            final Set<NamespacedKey> loadedKeys
     ) {
-        final Object rawLevel =
-                enchantmentSection.get("level");
+        if (loadedKeys.add(enchantmentKey)) {
+            return;
+        }
 
-        if (!(rawLevel instanceof Number number)) {
-            throw new InvalidPropertyTypeException(
+        throw new InvalidPropertyValueException(
+                enchantmentId,
+                propertyRoot,
+                enchantmentKey.toString(),
+                "duplicates another enchantment key"
+        );
+    }
+
+    /**
+     * Bukkit RegistryからEnchantmentを取得する。
+     *
+     * @param enchantmentId       Enchantment定義ID
+     * @param propertyRoot        定義の完全パス
+     * @param enchantmentKey      Enchantmentキー
+     * @param enchantmentRegistry Bukkit Registry
+     * @return Enchantment
+     */
+    private Enchantment findEnchantment(
+            final String enchantmentId,
+            final String propertyRoot,
+            final NamespacedKey enchantmentKey,
+            final Registry<Enchantment> enchantmentRegistry
+    ) {
+        final Enchantment enchantment =
+                enchantmentRegistry.get(enchantmentKey);
+
+        if (enchantment == null) {
+            throw new UnknownConfigurationValueException(
                     enchantmentId,
-                    "Enchantment",
-                    enchantmentKey.getKey(),
-                    "level must be an integer"
+                    propertyRoot,
+                    enchantmentKey.toString()
             );
         }
 
-        final double doubleValue = number.doubleValue();
-
-        if (!Double.isFinite(doubleValue)
-                || doubleValue != Math.rint(doubleValue)
-                || doubleValue < 1
-                || doubleValue > Integer.MAX_VALUE
-        ) {
-            throw new InvalidPropertyValueException(
-                    enchantmentId,
-                    "enchantments." + enchantmentKey + ".level",
-                    rawLevel,
-                    "must be greater than or equal to 1"
-            );
-        }
-
-        return (int) doubleValue;
+        return enchantment;
     }
 
     /**
      * エンチャントレベルを検証する。
      *
      * @param enchantmentId          エンチャントID
+     * @param propertyRoot           定義の完全パス
      * @param enchantment            エンチャント
      * @param level                  設定レベル
      * @param ignoreLevelRestriction レベル制限を無視する場合true
      */
     private void validateEnchantmentLevel(
             final String enchantmentId,
+            final String propertyRoot,
             final Enchantment enchantment,
             final int level,
             final boolean ignoreLevelRestriction
@@ -258,15 +292,23 @@ public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String
             return;
         }
 
-        if (level < enchantment.getStartLevel()
-                || level > enchantment.getMaxLevel()) {
-            throw new InvalidPropertyValueException(
-                    enchantmentId,
-                    "enchantments." + enchantment.getKey() + ".level",
-                    level,
-                    "must be between 1 and " + enchantment.getMaxLevel()
-            );
+        final int minimumLevel = enchantment.getStartLevel();
+        final int maximumLevel = enchantment.getMaxLevel();
+
+        if (level >= minimumLevel
+                && level <= maximumLevel) {
+            return;
         }
+
+        throw new InvalidPropertyValueException(
+                enchantmentId,
+                propertyRoot + ".level",
+                level,
+                "must be between "
+                        + minimumLevel
+                        + "and "
+                        + maximumLevel
+        );
     }
 
     /**

@@ -1,6 +1,9 @@
 package com.example.rpg.item.repository;
 
-import com.example.rpg.common.exception.*;
+import com.example.rpg.common.config.ConfigurationValueReader;
+import com.example.rpg.common.exception.InvalidEnumValueException;
+import com.example.rpg.common.exception.InvalidPropertyValueException;
+import com.example.rpg.common.exception.UnknownConfigurationValueException;
 import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemAttributeDto;
 import com.example.rpg.item.repository.interfaces.IAttributeRepository;
@@ -21,6 +24,16 @@ import java.util.Map;
 
 /**
  * RPG プラグイン独自の属性情報用Repository
+ *
+ * <p>
+ * yaml structure</br>
+ * attributes:</br>
+ * 　　attributeId:</br>
+ * 　　　　attribute: {@link String}</br>
+ * 　　　　amount: {@link Integer}</br>
+ * 　　　　operation: {@link AttributeModifier.Operation}</br>
+ * 　　　　slot: {@link EquipmentSlotGroup}</br>
+ * </p>
  */
 public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, ItemAttributeDto>> implements IAttributeRepository {
     /**
@@ -31,11 +44,10 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
     /**
      * SHOP Repositoryを生成する。
      *
-     * @param configurationFile shop.yml
+     * @param configurationFile attributes.yml
      */
     public YamlAttributeRepository(final File configurationFile) {
         super(configurationFile);
-
         load();
     }
 
@@ -69,49 +81,78 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
         final Map<String, ItemAttributeDto> loadedAttributes = new LinkedHashMap<>();
 
         for (String attributeId : attributesSection.getKeys(false)) {
-            final ConfigurationSection attributeSection =
-                    attributesSection.getConfigurationSection(
-                            attributeId
-                    );
+            final String propertyRoot =
+                    ATTRIBUTES_SECTION_PATH
+                            + "."
+                            + attributeId;
 
-            if (attributeSection == null) {
-                throw new ConfigurationException(
-                        "Attribute定義がセクションではありません。"
-                                + " / attributeId="
-                                + attributeId
-                );
-            }
+            final ConfigurationSection attributeSection =
+                    ConfigurationValueReader.requireSection(
+                            attributesSection,
+                            attributeId,
+                            attributeId,
+                            propertyRoot
+                    );
 
             loadedAttributes.put(
                     attributeId,
                     loadAttribute(
                             attributeId,
-                            attributeSection
+                            attributeSection,
+                            propertyRoot
                     )
             );
         }
 
-        return loadedAttributes;
+        return Map.copyOf(loadedAttributes);
     }
 
     /**
      * Attributeを読み込む。
      *
-     * @param attributeId 属性ID
-     * @param section     Attribute設定
+     * @param attributeId  属性ID
+     * @param section      Attribute設定
+     * @param propertyRoot 定義の完全パス
      * @return AttributeModifier情報
      */
     private ItemAttributeDto loadAttribute(
             final String attributeId,
-            final ConfigurationSection section
+            final ConfigurationSection section,
+            final String propertyRoot
     ) {
-        final String attributeName = requireString(section, attributeId, "attribute");
+        final String attributeName = ConfigurationValueReader.requireString(
+                section,
+                "attribute",
+                attributeId,
+                propertyRoot
+        );
+
         final Attribute attribute = parseAttribute(attributeId, attributeName);
-        final double amount = requireDouble(section, attributeId, "amount");
-        final String operationName = requireString(section, attributeId, "operation");
+
+        final double amount = ConfigurationValueReader.requireDouble(
+                section,
+                "amount",
+                attributeId,
+                propertyRoot + ".amount"
+        );
+
+        final String operationName = ConfigurationValueReader.requireString(
+                section,
+                "operation",
+                attributeId,
+                propertyRoot + ".operation"
+        );
+
         final AttributeModifier.Operation operation =
                 parseOperation(attributeId, operationName);
-        final String slotGroupName = requireString(section, attributeId, "slot");
+
+        final String slotGroupName = ConfigurationValueReader.requireString(
+                section,
+                "slot",
+                attributeId,
+                propertyRoot + ".slot"
+        );
+
         final EquipmentSlotGroup slotGroup = parseSlotGroup(
                 attributeId, slotGroupName);
 
@@ -137,16 +178,21 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
             final String attributeId,
             final String attributeName
     ) {
-        final String normalizedName =
-                attributeName.toLowerCase(Locale.ROOT);
+        final String propertyPath =
+                ATTRIBUTES_SECTION_PATH
+                        + "."
+                        + attributeId
+                        + ".attribute";
 
         final NamespacedKey attributeKey =
-                NamespacedKey.fromString(normalizedName);
+                NamespacedKey.fromString(
+                        attributeName.toLowerCase(Locale.ROOT)
+                );
 
         if (attributeKey == null) {
             throw new InvalidPropertyValueException(
                     attributeId,
-                    "attributes." + attributeId + ".attribute",
+                    propertyPath,
                     attributeName,
                     "must be a valid namespaced key"
             );
@@ -162,7 +208,7 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
         if (attribute == null) {
             throw new UnknownConfigurationValueException(
                     attributeId,
-                    "attributes." + attributeId + ".attribute",
+                    propertyPath + ".attribute",
                     attributeName
             );
         }
@@ -182,6 +228,12 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
             final String attributeId,
             final String operationName
     ) {
+        final String propertyPath =
+                ATTRIBUTES_SECTION_PATH
+                        + "."
+                        + attributeId
+                        + ".operation";
+
         try {
             return AttributeModifier.Operation.valueOf(
                     operationName.toUpperCase(Locale.ROOT)
@@ -189,7 +241,7 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
         } catch (IllegalArgumentException ex) {
             throw new InvalidEnumValueException(
                     attributeId,
-                    "attributes." + attributeId + ".operation",
+                    propertyPath,
                     operationName,
                     AttributeModifier.Operation.class
             );
@@ -208,6 +260,12 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
             final String attributeId,
             final String slotGroupName
     ) {
+        final String propertyPath =
+                ATTRIBUTES_SECTION_PATH
+                        + "."
+                        + attributeId
+                        + ".slot";
+
         final EquipmentSlotGroup slotGroup =
                 EquipmentSlotGroup.getByName(
                         slotGroupName.toLowerCase(Locale.ROOT)
@@ -216,106 +274,12 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
         if (slotGroup == null) {
             throw new UnknownConfigurationValueException(
                     attributeId,
-                    "attributes." + attributeId + ".slot",
+                    propertyPath,
                     slotGroupName
             );
         }
 
         return slotGroup;
-    }
-
-    /**
-     * 必須文字列を取得する。
-     *
-     * @param section      読み込み対象セクション
-     * @param attributeId  属性
-     * @param attributeKey キー
-     * @return 空ではない文字列
-     */
-    private String requireString(
-            final ConfigurationSection section,
-            final String attributeId,
-            final String attributeKey
-    ) {
-        final String propertyPath =
-                ATTRIBUTES_SECTION_PATH + "." + attributeId;
-
-        if (!section.isSet(attributeKey)) {
-            throw new RequiredPropertyException(
-                    attributeId,
-                    propertyPath
-            );
-        }
-
-        final Object rawValue = section.get(attributeKey);
-
-        if (!(rawValue instanceof String value)) {
-            throw new InvalidPropertyTypeException(
-                    attributeKey,
-                    propertyPath,
-                    "string",
-                    rawValue
-            );
-        }
-
-        if (value.isBlank()) {
-            throw new InvalidPropertyValueException(
-                    attributeId,
-                    propertyPath,
-                    value,
-                    "must not be blank"
-            );
-        }
-
-        return value;
-    }
-
-    /**
-     * 必須の有限な数値を取得する。
-     *
-     * @param section      読み込み対象セクション
-     * @param attributeId  属性ID
-     * @param attributeKey キー名
-     * @return 有限なdouble値
-     */
-    private double requireDouble(
-            final ConfigurationSection section,
-            final String attributeId,
-            final String attributeKey
-    ) {
-        final String propertyPath =
-                ATTRIBUTES_SECTION_PATH + "." + attributeId + "." + attributeKey;
-
-        if (!section.isSet(attributeKey)) {
-            throw new RequiredPropertyException(
-                    attributeId,
-                    propertyPath
-            );
-        }
-
-        final Object rawValue = section.get(attributeKey);
-
-        if (!(rawValue instanceof Number number)) {
-            throw new InvalidPropertyTypeException(
-                    attributeId,
-                    propertyPath,
-                    "number",
-                    rawValue
-            );
-        }
-
-        final double value = number.doubleValue();
-
-        if (!Double.isFinite(value)) {
-            throw new InvalidPropertyValueException(
-                    attributeId,
-                    propertyPath,
-                    rawValue,
-                    "must be a finite number"
-            );
-        }
-
-        return value;
     }
 
     /**

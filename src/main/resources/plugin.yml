@@ -18,8 +18,6 @@ commands:
   shop:
     description: SHOPを開きます
     usage: /shop
-  rpg:
-
   admin:
     description: RPGプラグイン管理コマンド
     usage: /admin [reload|resetshop] [<player>|<settingFilename>]

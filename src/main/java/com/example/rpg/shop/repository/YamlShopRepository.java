@@ -22,18 +22,25 @@ import java.util.Map;
  * SHOP定義を管理するRepository
  *
  * <p>
- * config.ymlからSHOP定義を読み込み、DTOへ変換して保持する。
- * また、カテゴリや商品の検索機能を提供することで、
- * 呼び出し側がDTOの内部構造（MapやListなど）へ依存しないよう責務を集約する。
- * </p>
- *
- * <p>
- * 将来的に設定ファイルからPostgreSQLなどの永続ストレージへ移行した場合でも、
- * ServiceやFacadeはRepository経由で取得するだけとなり、
- * データ取得方法の変更をRepository内へ閉じ込められる。
+ * yaml structure</br>
+ * shop:</br>
+ * 　　title: {@link String} Category list title</br>
+ * 　　size: {@link Integer} 9 ~ 54</br>
+ * 　　categories:</br>
+ * 　　　categoryName:</br>
+ * 　　　　slot: {@link Integer}</br>
+ * 　　　　icon: {@link Material}</br>
+ * 　　　　name: {@link String} display Name on Category list</br>
+ * 　　　　items:</br>
+ * 　　　　　　itemId:</br>
+ * 　　　　　　　　itemId: {@link String}</br>
+ * 　　　　　　　　slot: {@link Integer}</br>
+ * 　　　　　　　　price: {@link Integer}</br>
+ * 　　　　　　　　sellPrice: {@link Integer}</br>
+ * 　　　　　　　　amount: {@link Integer}</br>
  * </p>
  */
-public class YamlShopRepository extends AbstractYamlRepository<ShopDto> implements IShopRepository {
+public final class YamlShopRepository extends AbstractYamlRepository<ShopDto> implements IShopRepository {
 
     /**
      * SHOP定義のルートセクション名

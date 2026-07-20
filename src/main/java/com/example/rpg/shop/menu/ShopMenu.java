@@ -1,7 +1,7 @@
 package com.example.rpg.shop.menu;
 
 import com.example.rpg.common.message.MessageUtil;
-import com.example.rpg.item.ItemBuilder;
+import com.example.rpg.item.factory.interfaces.IItemFactory;
 import com.example.rpg.shop.dto.ShopCategoryDto;
 import com.example.rpg.shop.dto.ShopDto;
 import com.example.rpg.shop.dto.ShopItemDto;
@@ -93,23 +93,23 @@ public class ShopMenu {
     /**
      * RPGアイテム生成Builder
      */
-    private final ItemBuilder itemBuilder;
+    private final IItemFactory itemFactory;
 
     /**
      * ShopMenuを生成する。
      *
      * @param shopRepository SHOP設定Repository
      * @param pdcKeys        SHOP GUI用PDCキー
-     * @param itemBuilder    RPGアイテム生成Builder
+     * @param itemFactory    RPGアイテム生成Factory
      */
     public ShopMenu(
             final IShopRepository shopRepository,
             final ShopPdcKeys pdcKeys,
-            final ItemBuilder itemBuilder
+            final IItemFactory itemFactory
     ) {
         this.shopRepository = shopRepository;
         this.pdcKeys = pdcKeys;
-        this.itemBuilder = itemBuilder;
+        this.itemFactory = itemFactory;
     }
 
     /**
@@ -289,7 +289,7 @@ public class ShopMenu {
             final ShopItemDto item,
             final String categoryId
     ) {
-        final ItemStack itemStack = itemBuilder.build(item.getItemId(), item.getAmount());
+        final ItemStack itemStack = itemFactory.create(item.getItemId(), item.getAmount());
         final ItemMeta meta = itemStack.getItemMeta();
 
         meta.lore(createItemLore(meta, item));

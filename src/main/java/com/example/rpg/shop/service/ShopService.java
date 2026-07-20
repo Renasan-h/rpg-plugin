@@ -1,8 +1,8 @@
 package com.example.rpg.shop.service;
 
 import com.example.rpg.common.message.MessageUtil;
-import com.example.rpg.item.ItemBuilder;
 import com.example.rpg.item.dto.ItemDto;
+import com.example.rpg.item.factory.interfaces.IItemFactory;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
 import com.example.rpg.item.service.ItemPdcService;
 import com.example.rpg.repository.interfaces.IMoneyRepository;
@@ -52,7 +52,7 @@ public class ShopService {
     /**
      * RPGアイテム生成Builder。
      */
-    private final ItemBuilder itemBuilder;
+    private final IItemFactory itemFactory;
 
     /**
      * ShopServiceを生成する。
@@ -61,7 +61,7 @@ public class ShopService {
      * @param moneyRepository        所持金Repository
      * @param shopPurchaseRepository 購入履歴Repository
      * @param itemPdcService         ItemPdc操作用サービス
-     * @param itemBuilder            RPGアイテム生成Builder
+     * @param itemFactory            RPGアイテム生成Factory
      * @param itemRepository         RPGアイテム定義Repository
      */
     public ShopService(
@@ -69,14 +69,14 @@ public class ShopService {
             final IMoneyRepository moneyRepository,
             final IShopPurchaseRepository shopPurchaseRepository,
             final ItemPdcService itemPdcService,
-            final ItemBuilder itemBuilder,
+            final IItemFactory itemFactory,
             final IItemRepository itemRepository
     ) {
         this.shopRepository = shopRepository;
         this.moneyRepository = moneyRepository;
         this.shopPurchaseRepository = shopPurchaseRepository;
         this.itemPdcService = itemPdcService;
-        this.itemBuilder = itemBuilder;
+        this.itemFactory = itemFactory;
         this.itemRepository = itemRepository;
     }
 
@@ -242,7 +242,7 @@ public class ShopService {
      * @param shopItem 商品定義
      */
     private void buyItem(Player player, ShopItemDto shopItem) {
-        ItemStack itemStack = itemBuilder.build(shopItem.getItemId(), shopItem.getAmount());
+        ItemStack itemStack = itemFactory.create(shopItem.getItemId(), shopItem.getAmount());
 
         player.getInventory().addItem(itemStack);
     }

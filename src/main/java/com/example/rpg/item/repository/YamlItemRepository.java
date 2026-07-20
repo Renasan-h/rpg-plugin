@@ -32,12 +32,12 @@ import java.util.*;
  * 　　　　unbreakable: {@link Boolean}</br>
  * 　　　　customModelData: {@link Integer}</br>
  * 　　　　enchantments:</br>
- * 　　　　　　- {@link String} enchan22tmentId</br>
+ * 　　　　　　- {@link String} enchantmentId</br>
  * 　　　　attributes:</br>
  * 　　　　　　- {@link String} attributeId</br>
  * </p>
  */
-public class YamlItemRepository extends AbstractYamlRepository<Map<String, ItemDto>> implements IItemRepository {
+public final class YamlItemRepository extends AbstractYamlRepository<Map<String, ItemDto>> implements IItemRepository {
     /**
      * アイテム定義のルートセクション名
      */

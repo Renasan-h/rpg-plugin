@@ -7,7 +7,8 @@ import com.example.rpg.command.ExpCommand;
 import com.example.rpg.command.MoneyCommand;
 import com.example.rpg.command.PayCommand;
 import com.example.rpg.common.message.MessageUtil;
-import com.example.rpg.item.ItemBuilder;
+import com.example.rpg.item.factory.ItemFactory;
+import com.example.rpg.item.factory.interfaces.IItemFactory;
 import com.example.rpg.item.pdc.ItemPdcKeys;
 import com.example.rpg.item.repository.YamlAttributeRepository;
 import com.example.rpg.item.repository.YamlEffectRepository;
@@ -34,6 +35,7 @@ import com.example.rpg.shop.repository.YamlShopRepository;
 import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.shop.service.ShopService;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -71,29 +73,29 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      */
     private IShopPurchaseRepository shopPurchaseRepository;
     /**
-     * RPGアイテム定義Repository。
+     * RPGアイテム定義Repository
      */
     private IItemRepository itemRepository;
     /**
-     * RPG属性定義Repository。
+     * RPG属性定義Repository
      */
     private IAttributeRepository attributeRepository;
     /**
-     * RPGエンチャント定義Repository。
+     * RPGエンチャント定義Repository
      */
     private IEnchantmentRepository enchantmentRepository;
     /**
-     * RPG効果定義Repository。
+     * RPG効果定義Repository
      */
     private IEffectRepository effectRepository;
     /**
-     * RPGアイテム用PDCキー。
+     * RPGアイテム用PDCキー
      */
     private ItemPdcKeys itemPdcKeys;
     /**
-     * RPGアイテム生成Builder。
+     * RPGアイテム生成Factory
      */
-    private ItemBuilder itemBuilder;
+    private IItemFactory itemFactory;
     /**
      * ShopService
      */
@@ -115,7 +117,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      */
     private ShopFacade shopFacade;
     /**
-     * SHOP GUI用PDCキー。
+     * SHOP GUI用PDCキー
      */
     private ShopPdcKeys shopPdcKeys;
 
@@ -128,7 +130,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
 
         // 初期化フェーズ
         initializeRepositories();
-        initializeBuilders();
+        initializeItemFactory();
         initializeServices();
         initializeMenus();
         initializeFacades();
@@ -184,7 +186,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 moneyRepository,
                 shopPurchaseRepository,
                 itemPdcService,
-                itemBuilder,
+                itemFactory,
                 itemRepository
         );
         this.configurationReloadService =
@@ -199,16 +201,22 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     }
 
     /**
-     * Builderを生成する。
+     * RPGアイテム生成Factoryを初期化する。
+     *
+     * <p>
+     * ItemFactoryがRepositoryから定義を取得し、
+     * ItemBuilderを使用してItemStackを生成する。
+     * </p>
      */
-    private void initializeBuilders() {
+    private void initializeItemFactory() {
         this.itemPdcKeys = new ItemPdcKeys(this);
 
-        this.itemBuilder = new ItemBuilder(
+        this.itemFactory = new ItemFactory(
                 itemRepository,
-                attributeRepository,
                 enchantmentRepository,
+                attributeRepository,
                 effectRepository,
+                MiniMessage.miniMessage(),
                 itemPdcKeys,
                 this
         );
@@ -223,7 +231,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         this.shopMenu = new ShopMenu(
                 shopRepository,
                 shopPdcKeys,
-                itemBuilder
+                itemFactory
         );
     }
 

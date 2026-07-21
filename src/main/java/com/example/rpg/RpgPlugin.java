@@ -19,6 +19,10 @@ import com.example.rpg.item.repository.interfaces.IEffectRepository;
 import com.example.rpg.item.repository.interfaces.IEnchantmentRepository;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
 import com.example.rpg.item.service.ItemPdcService;
+import com.example.rpg.item.validator.AttributeDefinitionValidator;
+import com.example.rpg.item.validator.EffectDefinitionValidator;
+import com.example.rpg.item.validator.EnchantmentDefinitionValidator;
+import com.example.rpg.item.validator.ItemDefinitionValidator;
 import com.example.rpg.listener.BlockBreakListener;
 import com.example.rpg.listener.EntityKillListener;
 import com.example.rpg.listener.ServerPingListener;
@@ -97,6 +101,22 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      */
     private IItemFactory itemFactory;
     /**
+     * Item定義Validator。
+     */
+    private ItemDefinitionValidator itemDefinitionValidator;
+    /**
+     * Attribute定義Validator。
+     */
+    private AttributeDefinitionValidator attributeDefinitionValidator;
+    /**
+     * Enchantment定義Validator。
+     */
+    private EnchantmentDefinitionValidator enchantmentDefinitionValidator;
+    /**
+     * Effect定義Validator。
+     */
+    private EffectDefinitionValidator effectDefinitionValidator;
+    /**
      * ShopService
      */
     private ShopService shopService;
@@ -128,8 +148,15 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     public void onEnable() {
         prepareResourceFiles();
 
-        // 初期化フェーズ
+        // YAMLから各定義を読み込むRepositoryを生成する。
         initializeRepositories();
+
+        // 定義内容を検証するValidatorを生成する。
+        initializeValidators();
+
+        // FactoryやServiceの生成前に全定義を検証する。
+        validateDefinitions();
+
         initializeItemFactory();
         initializeServices();
         initializeMenus();
@@ -196,7 +223,11 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                         attributeRepository,
                         enchantmentRepository,
                         effectRepository,
-                        shopRepository
+                        shopRepository,
+                        attributeDefinitionValidator,
+                        enchantmentDefinitionValidator,
+                        effectDefinitionValidator,
+                        itemDefinitionValidator
                 );
     }
 
@@ -245,6 +276,54 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 shopService,
                 shopPdcKeys
         );
+    }
+
+    /**
+     * Repositoryへ読み込まれた全定義を依存順に検証する。
+     */
+    private void validateDefinitions() {
+        // Itemが参照する定義を先に検証する。
+        attributeDefinitionValidator.validateAll(
+                attributeRepository.findAll().values()
+        );
+
+        enchantmentDefinitionValidator.validateAll(
+                enchantmentRepository.findAll()
+        );
+
+        effectDefinitionValidator.validateAll(
+                effectRepository.findAll()
+        );
+
+        // 参照先が正常であることを確認後、Itemを検証する。
+        itemDefinitionValidator.validateAll(
+                itemRepository.findAll()
+        );
+    }
+
+    /**
+     * 各設定定義のValidatorを初期化する。
+     */
+    private void initializeValidators() {
+        this.attributeDefinitionValidator =
+                new AttributeDefinitionValidator();
+
+        this.enchantmentDefinitionValidator =
+                new EnchantmentDefinitionValidator();
+
+        this.effectDefinitionValidator =
+                new EffectDefinitionValidator();
+
+        /*
+         * ItemValidatorは他定義との参照関係を確認するため、
+         * 参照先Repositoryを注入する。
+         */
+        this.itemDefinitionValidator =
+                new ItemDefinitionValidator(
+                        attributeRepository,
+                        enchantmentRepository,
+                        effectRepository
+                );
     }
 
     /**

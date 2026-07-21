@@ -80,7 +80,7 @@ public final class ItemFactory implements IItemFactory {
      *
      * @param itemRepository        アイテム定義Repository
      * @param enchantmentRepository エンチャント定義Repository
-     * @param attributeRepository   属亭定義Repository
+     * @param attributeRepository   属性定義Repository
      * @param effectRepository      効果定義Repository
      * @param miniMessage           MiniMessage インスタンス
      * @param itemPdcKeys           RPGアイテム用PDCキー
@@ -249,7 +249,8 @@ public final class ItemFactory implements IItemFactory {
             final ItemBuilder builder,
             final ItemDto itemDto
     ) {
-        List<String> attributes = itemDto.getAttributes();
+        final List<String> attributes = itemDto.getAttributes();
+
         for (int index = 0; index < attributes.size(); index++) {
             final ItemAttributeDto attribute =
                     requireAttributeDefinition(
@@ -257,7 +258,7 @@ public final class ItemFactory implements IItemFactory {
                             itemDto.getAttributes().get(index)
                     );
 
-            AttributeModifier attributeModifier = getAttributeModifier(
+            AttributeModifier attributeModifier = createAttributeModifier(
                     itemDto.getId(),
                     index,
                     attribute
@@ -278,7 +279,7 @@ public final class ItemFactory implements IItemFactory {
      * @param attribute ItemAttribute
      * @return AttributeModifier
      */
-    private @NonNull AttributeModifier getAttributeModifier(
+    private @NonNull AttributeModifier createAttributeModifier(
             final String itemId,
             final int index,
             final ItemAttributeDto attribute
@@ -431,7 +432,7 @@ public final class ItemFactory implements IItemFactory {
                     itemId,
                     "effects",
                     effectId,
-                    "Referenced effects definition does not exist"
+                    "Referenced effect definition does not exist"
             );
         }
 

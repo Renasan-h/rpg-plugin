@@ -63,7 +63,7 @@ public class ItemAttributeDto {
         );
         this.operation = Objects.requireNonNull(
                 operation,
-                "amount must not be null"
+                "operation must not be null"
         );
         this.slotGroup = Objects.requireNonNull(
                 slotGroup,

@@ -9,6 +9,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 
@@ -449,16 +450,29 @@ public final class ItemBuilder {
     }
 
     /**
-     * 効果をItemMetaへ適用する。
+     * PotionEffectをPotionMetaへ適用する。
+     *
+     * <p>
+     * PotionEffectはPotionMetaを持つアイテムにのみ設定できる。
+     * PotionMeta以外のアイテムに効果が指定された場合の設定検証は、
+     * ItemFactoryまたは設定検証Service側で行う。
+     * </p>
      *
      * @param meta ItemMeta
      */
     private void applyEffects(final ItemMeta meta) {
-        for (EnchantmentEntry entry : enchantments) {
-            meta.addEnchant(
-                    entry.enchantment(),
-                    entry.level(),
-                    entry.ignoreLevelRestriction()
+        if (effects.isEmpty()) {
+            return;
+        }
+
+        if (!(meta instanceof PotionMeta potionMeta)) {
+            return;
+        }
+
+        for (PotionEffect effect : effects) {
+            potionMeta.addCustomEffect(
+                    effect,
+                    true
             );
         }
     }

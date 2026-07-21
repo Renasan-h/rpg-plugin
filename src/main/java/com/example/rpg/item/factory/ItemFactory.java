@@ -6,6 +6,9 @@ import com.example.rpg.item.dto.ItemAttributeDto;
 import com.example.rpg.item.dto.ItemDto;
 import com.example.rpg.item.dto.ItemEffectDto;
 import com.example.rpg.item.dto.ItemEnchantmentDto;
+import com.example.rpg.item.exception.InvalidItemAmountException;
+import com.example.rpg.item.exception.ItemDefinitionNotFoundException;
+import com.example.rpg.item.exception.ReferencedDefinitionNotFoundException;
 import com.example.rpg.item.factory.interfaces.IItemFactory;
 import com.example.rpg.item.pdc.ItemPdcKeys;
 import com.example.rpg.item.repository.interfaces.IAttributeRepository;
@@ -163,14 +166,14 @@ public final class ItemFactory implements IItemFactory {
      *
      * @param itemId アイテムID
      * @return アイテム定義
-     * @throws IllegalArgumentException 定義が存在しない場合
+     * @throws ItemDefinitionNotFoundException アイテム定義が存在しない場合
      */
     private ItemDto requireItemDefinition(final String itemId) {
         final ItemDto itemDto = itemRepository.findById(itemId);
 
         if (itemDto == null) {
-            throw new IllegalArgumentException(
-                    "アイテム定義が存在しません: itemId=" + itemId
+            throw new ItemDefinitionNotFoundException(
+                    itemId
             );
         }
 
@@ -362,10 +365,10 @@ public final class ItemFactory implements IItemFactory {
     /**
      * エンチャント定義を取得する。
      *
-     * @param itemId        アイテムID
+     * @param itemId        参照元アイテムID
      * @param enchantmentId エンチャントID
      * @return エンチャント定義
-     * @throws InvalidPropertyValueException エンチャント定義が存在しない場合
+     * @throws ReferencedDefinitionNotFoundException エンチャント定義が存在しない場合
      */
     private ItemEnchantmentDto requireEnchantmentDefinition(
             final String itemId,
@@ -375,11 +378,10 @@ public final class ItemFactory implements IItemFactory {
                 enchantmentRepository.findById(enchantmentId);
 
         if (enchantment == null) {
-            throw new InvalidPropertyValueException(
+            throw new ReferencedDefinitionNotFoundException(
                     itemId,
                     "enchantments",
-                    enchantmentId,
-                    "Referenced enchantment definition does not exist"
+                    enchantmentId
             );
         }
 
@@ -389,9 +391,10 @@ public final class ItemFactory implements IItemFactory {
     /**
      * 属性定義を取得する。
      *
+     * @param itemId      参照元アイテムID
      * @param attributeId 属性ID
      * @return 属性定義
-     * @throws InvalidPropertyValueException 属性定義が存在しない場合
+     * @throws ReferencedDefinitionNotFoundException 属性定義が存在しない場合
      */
     private ItemAttributeDto requireAttributeDefinition(
             final String itemId,
@@ -401,11 +404,10 @@ public final class ItemFactory implements IItemFactory {
                 attributeRepository.findById(attributeId);
 
         if (attribute == null) {
-            throw new InvalidPropertyValueException(
+            throw new ReferencedDefinitionNotFoundException(
                     itemId,
                     "attributes",
-                    attributeId,
-                    "Referenced attribute definition does not exist"
+                    attributeId
             );
         }
 
@@ -413,12 +415,12 @@ public final class ItemFactory implements IItemFactory {
     }
 
     /**
-     * 属性定義を取得する。
+     * PotionEffect定義を取得する。
      *
-     * @param itemId   アイテムID
+     * @param itemId   参照元アイテムID
      * @param effectId 効果ID
      * @return 効果定義
-     * @throws InvalidPropertyValueException 効果定義が存在しない場合
+     * @throws ReferencedDefinitionNotFoundException 効果定義が存在しない場合
      */
     private ItemEffectDto requireEffectDefinition(
             final String itemId,
@@ -428,11 +430,10 @@ public final class ItemFactory implements IItemFactory {
                 effectRepository.findById(effectId);
 
         if (effect == null) {
-            throw new InvalidPropertyValueException(
+            throw new ReferencedDefinitionNotFoundException(
                     itemId,
                     "effects",
-                    effectId,
-                    "Referenced effect definition does not exist"
+                    effectId
             );
         }
 
@@ -481,6 +482,7 @@ public final class ItemFactory implements IItemFactory {
      *
      * @param itemDto アイテム定義
      * @param amount  生成個数
+     * @throws InvalidItemAmountException 生成個数が範囲外の場合
      */
     private void validateAmount(
             final ItemDto itemDto,
@@ -490,14 +492,10 @@ public final class ItemFactory implements IItemFactory {
                 itemDto.getMaterial().getMaxStackSize();
 
         if (amount < 1 || amount > maxStackSize) {
-            throw new IllegalArgumentException(
-                    "amount is out of range"
-                            + " / amount="
-                            + amount
-                            + " / maxStackSize="
-                            + maxStackSize
-                            + " / itemId="
-                            + itemDto.getId()
+            throw new InvalidItemAmountException(
+                    itemDto.getId(),
+                    amount,
+                    maxStackSize
             );
         }
     }

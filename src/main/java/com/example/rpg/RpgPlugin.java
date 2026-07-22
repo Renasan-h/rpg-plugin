@@ -7,6 +7,8 @@ import com.example.rpg.command.ExpCommand;
 import com.example.rpg.command.MoneyCommand;
 import com.example.rpg.command.PayCommand;
 import com.example.rpg.common.message.MessageUtil;
+import com.example.rpg.item.assembler.ItemAssembler;
+import com.example.rpg.item.assembler.interfaces.IItemAssembler;
 import com.example.rpg.item.factory.ItemFactory;
 import com.example.rpg.item.factory.interfaces.IItemFactory;
 import com.example.rpg.item.pdc.ItemPdcKeys;
@@ -40,7 +42,6 @@ import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.shop.service.ShopService;
 import com.example.rpg.shop.validator.ShopDefinitionValidator;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -248,14 +249,17 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     private void initializeItemFactory() {
         this.itemPdcKeys = new ItemPdcKeys(this);
 
+        final IItemAssembler itemAssembler =
+                new ItemAssembler(
+                        enchantmentRepository,
+                        attributeRepository,
+                        effectRepository,
+                        itemPdcKeys,
+                        this
+                );
         this.itemFactory = new ItemFactory(
                 itemRepository,
-                enchantmentRepository,
-                attributeRepository,
-                effectRepository,
-                MiniMessage.miniMessage(),
-                itemPdcKeys,
-                this
+                itemAssembler
         );
     }
 

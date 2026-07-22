@@ -39,6 +39,7 @@ import com.example.rpg.shop.repository.YamlShopRepository;
 import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import com.example.rpg.shop.service.ShopService;
+import com.example.rpg.shop.validator.ShopDefinitionValidator;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -116,6 +117,10 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * Effect定義Validator。
      */
     private EffectDefinitionValidator effectDefinitionValidator;
+    /**
+     * SHOP定義Validatror
+     */
+    private ShopDefinitionValidator shopDefinitionValidator;
     /**
      * ShopService
      */
@@ -227,7 +232,8 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                         attributeDefinitionValidator,
                         enchantmentDefinitionValidator,
                         effectDefinitionValidator,
-                        itemDefinitionValidator
+                        itemDefinitionValidator,
+                        shopDefinitionValidator
                 );
     }
 
@@ -299,6 +305,10 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         itemDefinitionValidator.validateAll(
                 itemRepository.findAll()
         );
+
+        shopDefinitionValidator.validate(
+                shopRepository.getShop()
+        );
     }
 
     /**
@@ -323,6 +333,11 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                         attributeRepository,
                         enchantmentRepository,
                         effectRepository
+                );
+
+        this.shopDefinitionValidator =
+                new ShopDefinitionValidator(
+                        itemRepository
                 );
     }
 

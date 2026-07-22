@@ -1,5 +1,6 @@
 package com.example.rpg.shop.repository.interfaces;
 
+import com.example.rpg.common.repository.ReloadableRepository;
 import com.example.rpg.shop.dto.ShopCategoryDto;
 import com.example.rpg.shop.dto.ShopDto;
 import com.example.rpg.shop.dto.ShopItemDto;
@@ -21,7 +22,7 @@ import java.util.List;
  * データ取得方法の変更をRepository内へ閉じ込められる。
  * </p>
  */
-public interface IShopRepository {
+public interface IShopRepository extends ReloadableRepository {
 
     /**
      * 読み込み済みのSHOP定義。
@@ -32,11 +33,6 @@ public interface IShopRepository {
      * </p>
      */
     ShopDto getShop();
-
-    /**
-     * 設定ファイルを読み込み {@link ShopDto} を生成し保持する
-     */
-    void load();
 
     /**
      * SHOPカテゴリリストを取得する。

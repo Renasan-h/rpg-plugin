@@ -1,5 +1,6 @@
 package com.example.rpg.item.repository.interfaces;
 
+import com.example.rpg.common.repository.ReloadableRepository;
 import com.example.rpg.item.dto.ItemEnchantmentDto;
 
 import java.util.Map;
@@ -7,12 +8,7 @@ import java.util.Map;
 /**
  * RPG プラグイン独自のエンチャント情報用Repository
  */
-public interface IEnchantmentRepository {
-    /**
-     * エンチャント定義を読み込む。
-     */
-    void load();
-
+public interface IEnchantmentRepository extends ReloadableRepository {
     /**
      * エンチャントIDからエンチャント定義を取得する。
      *

@@ -1,5 +1,6 @@
 package com.example.rpg.item.repository.interfaces;
 
+import com.example.rpg.common.repository.ReloadableRepository;
 import com.example.rpg.item.dto.ItemDto;
 
 import java.util.List;
@@ -12,13 +13,7 @@ import java.util.List;
  * YAMLやPostgreSQLなどの実装差分をRepository内部へ閉じ込める。
  * </p>
  */
-public interface IItemRepository {
-
-    /**
-     * アイテム定義を読み込む。
-     */
-    void load();
-
+public interface IItemRepository extends ReloadableRepository {
     /**
      * アイテムIDから定義を取得する。
      *

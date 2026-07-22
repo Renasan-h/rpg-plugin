@@ -1,5 +1,6 @@
 package com.example.rpg.item.repository.interfaces;
 
+import com.example.rpg.common.repository.ReloadableRepository;
 import com.example.rpg.item.dto.ItemAttributeDto;
 
 import java.util.Map;
@@ -7,13 +8,7 @@ import java.util.Map;
 /**
  * RPG プラグイン独自の属性情報用Repository
  */
-public interface IAttributeRepository {
-
-    /**
-     * 属性定義を読み込む。
-     */
-    void load();
-
+public interface IAttributeRepository extends ReloadableRepository {
     /**
      * 属性IDから属性定義を取得する。
      *

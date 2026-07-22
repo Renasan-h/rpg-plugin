@@ -1,5 +1,6 @@
 package com.example.rpg.item.repository.interfaces;
 
+import com.example.rpg.common.repository.ReloadableRepository;
 import com.example.rpg.item.dto.ItemEffectDto;
 
 import java.util.Map;
@@ -7,14 +8,7 @@ import java.util.Map;
 /**
  * RPG プラグイン独自の効果情報用Repository
  */
-public interface IEffectRepository {
-    /**
-     * 効果定義を読み込む。
-     *
-     * <p>定義が存在しないばあは空</p>
-     */
-    void load();
-
+public interface IEffectRepository extends ReloadableRepository {
     /**
      * 効果IDから効果定義を取得する。
      *

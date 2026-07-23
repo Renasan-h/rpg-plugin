@@ -7,6 +7,8 @@ import com.example.rpg.command.ExpCommand;
 import com.example.rpg.command.MoneyCommand;
 import com.example.rpg.command.PayCommand;
 import com.example.rpg.common.message.MessageUtil;
+import com.example.rpg.event.publisher.BukkitBusinessEventPublisher;
+import com.example.rpg.event.publisher.BusinessEventPublisher;
 import com.example.rpg.item.assembler.ItemAssembler;
 import com.example.rpg.item.assembler.interfaces.IItemAssembler;
 import com.example.rpg.item.factory.ItemFactory;
@@ -57,6 +59,23 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * <p>
+ * process flow</br>
+ * </br>
+ * Repository・Validator</br>
+ * ↓</br>
+ * BusinessEventPublisher</br>
+ * ↓</br>
+ * Factory</br>
+ * ↓</br>
+ * Service</br>
+ * ↓</br>
+ * Facade</br>
+ * ↓</br>
+ * Command・Listener</br>
+ * </p>
+ */
 public class RpgPlugin extends JavaPlugin implements Listener {
     /**
      * リスポーン時のペナルティー減額率
@@ -146,6 +165,10 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * SHOP GUI用PDCキー
      */
     private ShopPdcKeys shopPdcKeys;
+    /**
+     * BusinessEvent発行処理。
+     */
+    private BusinessEventPublisher businessEventPublisher;
 
     /**
      * プラグイン有効化時の初期化処理。
@@ -160,6 +183,11 @@ public class RpgPlugin extends JavaPlugin implements Listener {
          */
         initializeDefinitionInfrastructure();
 
+        /*
+         * Serviceがイベントを発行できるよう、
+         * Service初期化前にPublisherを生成する。
+         */
+        initializeEventInfrastructure();
         initializeItemFactory();
         initializeServices();
         initializeMenus();
@@ -421,6 +449,16 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         this.shopDefinitionValidator =
                 new ShopDefinitionValidator(
                         itemRepository
+                );
+    }
+
+    /**
+     * BusinessEvent発行基盤を初期化する。
+     */
+    private void initializeEventInfrastructure() {
+        this.businessEventPublisher =
+                new BukkitBusinessEventPublisher(
+                        getServer().getPluginManager()
                 );
     }
 

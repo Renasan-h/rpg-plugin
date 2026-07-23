@@ -7,6 +7,7 @@ import com.example.rpg.common.exception.UnknownConfigurationValueException;
 import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemAttributeDto;
 import com.example.rpg.item.repository.interfaces.IAttributeRepository;
+import com.example.rpg.item.validator.AttributeDefinitionValidator;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.NamespacedKey;
@@ -21,6 +22,7 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * RPG プラグイン独自の属性情報用Repository
@@ -42,12 +44,29 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
     private static final String ATTRIBUTES_SECTION_PATH = "attributes";
 
     /**
+     * Attribute定義Validator。
+     */
+    private final AttributeDefinitionValidator validator;
+
+
+    /**
      * SHOP Repositoryを生成する。
      *
      * @param configurationFile attributes.yml
+     * @param validator         Attribute定義Validator
+     * @throws NullPointerException 引数がnullの場合
      */
-    public YamlAttributeRepository(final File configurationFile) {
+    public YamlAttributeRepository(
+            final File configurationFile,
+            final AttributeDefinitionValidator validator
+    ) {
         super(configurationFile);
+
+        this.validator = Objects.requireNonNull(
+                validator,
+                "validator must not be null"
+        );
+
         load();
     }
 
@@ -105,6 +124,18 @@ public class YamlAttributeRepository extends AbstractYamlRepository<Map<String, 
         }
 
         return Map.copyOf(loadedAttributes);
+    }
+
+    /**
+     * 読み込んだAttribute定義を検証する。
+     *
+     * @param candidateData 検証対象のAttribute定義
+     */
+    @Override
+    protected void validate(
+            final Map<String, ItemAttributeDto> candidateData
+    ) {
+        validator.validateAll(candidateData.values());
     }
 
     /**

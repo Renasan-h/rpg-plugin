@@ -8,6 +8,7 @@ import com.example.rpg.common.exception.UnknownConfigurationValueException;
 import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemDto;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
+import com.example.rpg.item.validator.ItemDefinitionValidator;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -44,13 +45,31 @@ public final class YamlItemRepository extends AbstractYamlRepository<Map<String,
     private static final String ITEMS_SECTION_PATH = "items";
 
     /**
+     * Item定義Validator。
+     */
+    private final ItemDefinitionValidator validator;
+
+    /**
      * YAML形式のItemRepositoryを生成する。
      *
      * @param configurationFile items.yml
+     * @param validator         Item定義Validator
+     * @throws NullPointerException 引数がnullの場合
      */
-    public YamlItemRepository(final File configurationFile) {
+    public YamlItemRepository(
+            final File configurationFile,
+            final ItemDefinitionValidator validator
+    ) {
         super(configurationFile);
 
+        this.validator = Objects.requireNonNull(
+                validator,
+                "validator must not be null"
+        );
+
+        /*
+         * Validatorフィールドの初期化完了後に読み込む。
+         */
         load();
     }
 
@@ -112,6 +131,18 @@ public final class YamlItemRepository extends AbstractYamlRepository<Map<String,
         return Collections.unmodifiableMap(
                 new LinkedHashMap<>(loadedItems)
         );
+    }
+
+    /**
+     * 読み込んだItem定義を検証する。
+     *
+     * @param candidateData 検証対象のItem定義
+     */
+    @Override
+    protected void validate(
+            final Map<String, ItemDto> candidateData
+    ) {
+        validator.validateAll(candidateData.values());
     }
 
     /**

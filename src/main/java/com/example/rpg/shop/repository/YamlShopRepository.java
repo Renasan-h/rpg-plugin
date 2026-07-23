@@ -8,15 +8,13 @@ import com.example.rpg.shop.dto.ShopDto;
 import com.example.rpg.shop.dto.ShopItemDto;
 import com.example.rpg.shop.dto.ShopItemType;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
+import com.example.rpg.shop.validator.ShopDefinitionValidator;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * SHOP定義を管理するRepository
@@ -48,12 +46,28 @@ public final class YamlShopRepository extends AbstractYamlRepository<ShopDto> im
     private static final String SHOP_SECTION_PATH = "shop";
 
     /**
+     * SHOP定義Validator
+     */
+    private final ShopDefinitionValidator validator;
+
+    /**
      * YAML形式のSHOP Repositoryを生成する。
      *
      * @param configurationFile shop.yml
+     * @param validator         SHOP定義Validator
+     * @throws NullPointerException 引数がnullの場合
      */
-    public YamlShopRepository(File configurationFile) {
+    public YamlShopRepository(
+            final File configurationFile,
+            final ShopDefinitionValidator validator
+    ) {
         super(configurationFile);
+
+        this.validator = Objects.requireNonNull(
+                validator,
+                "validator must not be null"
+        );
+
         load();
     }
 
@@ -107,6 +121,16 @@ public final class YamlShopRepository extends AbstractYamlRepository<ShopDto> im
                 size,
                 categories
         );
+    }
+
+    /**
+     * 読み込んだShop定義を検証する。
+     *
+     * @param candidateData 検証対象のShop定義
+     */
+    @Override
+    protected void validate(final ShopDto candidateData) {
+        validator.validate(candidateData);
     }
 
     /**

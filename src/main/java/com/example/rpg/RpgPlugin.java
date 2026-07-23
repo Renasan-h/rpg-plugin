@@ -154,14 +154,11 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     public void onEnable() {
         prepareResourceFiles();
 
-        // YAMLから各定義を読み込むRepositoryを生成する。
-        initializeRepositories();
-
-        // 定義内容を検証するValidatorを生成する。
-        initializeValidators();
-
-        // FactoryやServiceの生成前に全定義を検証する。
-        validateDefinitions();
+        /*
+         * Validatorを注入したRepositoryを依存順に初期化する。
+         * 各Repositoryは初回load時点で定義を検証する。
+         */
+        initializeDefinitionInfrastructure();
 
         initializeItemFactory();
         initializeServices();
@@ -191,19 +188,106 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     }
 
     /**
+     * 定義ValidatorとRepositoryを依存順に初期化する。
+     *
+     * <p>
+     * ItemはAttribute、Enchantment、Effectを参照し、
+     * SHOPはItemを参照する。
+     * そのため、参照される側から順番に初期化する。
+     * </p>
+     */
+    private void initializeDefinitionInfrastructure() {
+
+        /*
+         * 他Repositoryへ依存しないValidatorを先に生成する。
+         */
+        this.attributeDefinitionValidator = new AttributeDefinitionValidator();
+        this.enchantmentDefinitionValidator = new EnchantmentDefinitionValidator();
+        this.effectDefinitionValidator = new EffectDefinitionValidator();
+
+        /*
+         * Itemから参照される定義Repositoryを先に生成する。
+         * 各Repositoryはコンストラクタ内のloadで検証まで完了する。
+         */
+        this.attributeRepository =
+                new YamlAttributeRepository(
+                        new File(getDataFolder(), "attributes.yml"),
+                        attributeDefinitionValidator
+                );
+
+        this.enchantmentRepository =
+                new YamlEnchantmentRepository(
+                        new File(getDataFolder(), "enchantments.yml"),
+                        enchantmentDefinitionValidator
+                );
+
+        this.effectRepository =
+                new YamlEffectRepository(
+                        new File(getDataFolder(), "effects.yml"),
+                        effectDefinitionValidator
+                );
+
+        /*
+         * ItemValidatorは参照先Repositoryを使用するため、
+         * 参照先Repository初期化後に生成する。
+         */
+        this.itemDefinitionValidator =
+                new ItemDefinitionValidator(
+                        attributeRepository,
+                        enchantmentRepository,
+                        effectRepository
+                );
+
+        this.itemRepository =
+                new YamlItemRepository(
+                        new File(getDataFolder(), "items.yml"),
+                        itemDefinitionValidator
+                );
+
+        /*
+         * ShopValidatorはItemRepositoryを使用するため、
+         * ItemRepository初期化後に生成する。
+         */
+        this.shopDefinitionValidator =
+                new ShopDefinitionValidator(
+                        itemRepository
+                );
+
+        this.shopRepository =
+                new YamlShopRepository(
+                        new File(getDataFolder(), "shop.yml"),
+                        shopDefinitionValidator
+                );
+
+        /*
+         * 定義Repositoryではない永続化Repositoryを初期化する。
+         */
+        this.moneyRepository =
+                new MoneyRepository(this, new File(getDataFolder(), "money.yml"));
+
+        this.shopPurchaseRepository =
+                new ShopPurchaseRepository(this, new File(getDataFolder(), "shop-purchases.yml"));
+    }
+
+    /**
      * Repositoryを生成します。
      */
     private void initializeRepositories() {
 
-        this.shopRepository = new YamlShopRepository(new File(getDataFolder(), "shop.yml"));
+        this.shopRepository = new YamlShopRepository(
+                new File(getDataFolder(), "shop.yml"), this.shopDefinitionValidator);
         this.moneyRepository = new MoneyRepository(
                 this, new File(getDataFolder(), "money.yml"));
         this.shopPurchaseRepository = new ShopPurchaseRepository(
                 this, new File(getDataFolder(), "shop-purchases.yml"));
-        this.itemRepository = new YamlItemRepository(new File(getDataFolder(), "items.yml"));
-        this.attributeRepository = new YamlAttributeRepository(new File(getDataFolder(), "attributes.yml"));
-        this.enchantmentRepository = new YamlEnchantmentRepository(new File(getDataFolder(), "enchantments.yml"));
-        this.effectRepository = new YamlEffectRepository(new File(getDataFolder(), "effects.yml"));
+        this.itemRepository = new YamlItemRepository(
+                new File(getDataFolder(), "items.yml"), this.itemDefinitionValidator);
+        this.attributeRepository = new YamlAttributeRepository(
+                new File(getDataFolder(), "attributes.yml"), this.attributeDefinitionValidator);
+        this.enchantmentRepository = new YamlEnchantmentRepository(
+                new File(getDataFolder(), "enchantments.yml"), this.enchantmentDefinitionValidator);
+        this.effectRepository = new YamlEffectRepository(
+                new File(getDataFolder(), "effects.yml"), this.effectDefinitionValidator);
     }
 
     /**
@@ -229,12 +313,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                         attributeRepository,
                         enchantmentRepository,
                         effectRepository,
-                        shopRepository,
-                        attributeDefinitionValidator,
-                        enchantmentDefinitionValidator,
-                        effectDefinitionValidator,
-                        itemDefinitionValidator,
-                        shopDefinitionValidator
+                        shopRepository
                 );
     }
 

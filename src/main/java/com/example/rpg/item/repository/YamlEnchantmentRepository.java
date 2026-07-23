@@ -6,6 +6,7 @@ import com.example.rpg.common.exception.UnknownConfigurationValueException;
 import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemEnchantmentDto;
 import com.example.rpg.item.repository.interfaces.IEnchantmentRepository;
+import com.example.rpg.item.validator.EnchantmentDefinitionValidator;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.NamespacedKey;
@@ -35,12 +36,28 @@ public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String
     private static final String ENCHANTMENTS_SECTION_PATH = "enchantments";
 
     /**
+     * Enchantment定義Validator
+     */
+    private final EnchantmentDefinitionValidator validator;
+
+    /**
      * YAML形式のEnchantmentRepositoryを生成する。
      *
      * @param configurationFile enchantments.yml
+     * @param validator         Enchantment定義Validator
+     * @throws NullPointerException 引数がnullの場合
      */
-    public YamlEnchantmentRepository(final File configurationFile) {
+    public YamlEnchantmentRepository(
+            final File configurationFile,
+            final EnchantmentDefinitionValidator validator
+    ) {
         super(configurationFile);
+
+        this.validator = Objects.requireNonNull(
+                validator,
+                "validator must not be null"
+        );
+
         load();
     }
 
@@ -110,6 +127,16 @@ public class YamlEnchantmentRepository extends AbstractYamlRepository<Map<String
         }
 
         return loadedEnchantments;
+    }
+
+    /**
+     * 読み込んだEnchantment定義を検証する。
+     *
+     * @param candidateData 検証対象のEnchantment定義
+     */
+    @Override
+    protected void validate(final Map<String, ItemEnchantmentDto> candidateData) {
+        validator.validateAll(candidateData);
     }
 
     /**

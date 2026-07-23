@@ -6,6 +6,7 @@ import com.example.rpg.common.exception.UnknownConfigurationValueException;
 import com.example.rpg.common.repository.AbstractYamlRepository;
 import com.example.rpg.item.dto.ItemEffectDto;
 import com.example.rpg.item.repository.interfaces.IEffectRepository;
+import com.example.rpg.item.validator.EffectDefinitionValidator;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.NamespacedKey;
@@ -18,6 +19,7 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * RPG プラグイン独自の効果情報用Repository
@@ -42,14 +44,27 @@ public class YamlEffectRepository extends AbstractYamlRepository<Map<String, Ite
     private static final String EFFECTS_SECTION_PATH = "effects";
 
     /**
+     * Effect定義Validator。
+     */
+    private final EffectDefinitionValidator validator;
+
+    /**
      * YAML形式のItemEffectRepositoryを生成する。
      *
      * @param configurationFile effects.yml
+     * @param validator         Effect定義validator
+     * @throws NullPointerException 引数がnullの場合
      */
     public YamlEffectRepository(
-            final File configurationFile
+            final File configurationFile,
+            final EffectDefinitionValidator validator
     ) {
         super(configurationFile);
+
+        this.validator = Objects.requireNonNull(
+                validator,
+                "validator must not be null"
+        );
         load();
     }
 
@@ -98,6 +113,18 @@ public class YamlEffectRepository extends AbstractYamlRepository<Map<String, Ite
         }
 
         return loadedEffects;
+    }
+
+    /**
+     * 読み込んだEffect定義を検証する。
+     *
+     * @param candidateData 検証対象のEffect定義
+     */
+    @Override
+    protected void validate(
+            final Map<String, ItemEffectDto> candidateData
+    ) {
+        validator.validateAll(candidateData);
     }
 
     /**

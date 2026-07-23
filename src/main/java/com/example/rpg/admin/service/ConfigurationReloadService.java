@@ -5,12 +5,7 @@ import com.example.rpg.item.repository.interfaces.IAttributeRepository;
 import com.example.rpg.item.repository.interfaces.IEffectRepository;
 import com.example.rpg.item.repository.interfaces.IEnchantmentRepository;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
-import com.example.rpg.item.validator.AttributeDefinitionValidator;
-import com.example.rpg.item.validator.EffectDefinitionValidator;
-import com.example.rpg.item.validator.EnchantmentDefinitionValidator;
-import com.example.rpg.item.validator.ItemDefinitionValidator;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
-import com.example.rpg.shop.validator.ShopDefinitionValidator;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
@@ -56,41 +51,14 @@ public final class ConfigurationReloadService {
     private final IShopRepository shopRepository;
 
     /**
-     * Attribute定義Validator。
-     */
-    private final AttributeDefinitionValidator attributeDefinitionValidator;
-
-    /**
-     * Enchantment定義Validator。
-     */
-    private final EnchantmentDefinitionValidator enchantmentDefinitionValidator;
-
-    /**
-     * Effect定義Validator。
-     */
-    private final EffectDefinitionValidator effectDefinitionValidator;
-
-    /**
-     * アイテム定義Validator。
-     */
-    private final ItemDefinitionValidator itemDefinitionValidator;
-
-    /**
-     * SHOP定義Validator。
-     */
-    private final ShopDefinitionValidator shopDefinitionValidator;
-
-    /**
      * 設定再読み込みServiceを生成する。
      *
-     * @param plugin                  プラグイン本体
-     * @param itemRepository          アイテムRepository
-     * @param attributeRepository     Attribute Repository
-     * @param enchantmentRepository   Enchantment Repository
-     * @param effectRepository        Effect Repository
-     * @param shopRepository          SHOP Repository
-     * @param itemDefinitionValidator アイテム定義Validator
-     * @param shopDefinitionValidator SHOP定義Validator。
+     * @param plugin                プラグイン本体
+     * @param itemRepository        アイテムRepository
+     * @param attributeRepository   Attribute Repository
+     * @param enchantmentRepository Enchantment Repository
+     * @param effectRepository      Effect Repository
+     * @param shopRepository        SHOP Repository
      */
     public ConfigurationReloadService(
             final JavaPlugin plugin,
@@ -98,12 +66,7 @@ public final class ConfigurationReloadService {
             final IAttributeRepository attributeRepository,
             final IEnchantmentRepository enchantmentRepository,
             final IEffectRepository effectRepository,
-            final IShopRepository shopRepository,
-            final AttributeDefinitionValidator attributeDefinitionValidator,
-            final EnchantmentDefinitionValidator enchantmentDefinitionValidator,
-            final EffectDefinitionValidator effectDefinitionValidator,
-            final ItemDefinitionValidator itemDefinitionValidator,
-            final ShopDefinitionValidator shopDefinitionValidator
+            final IShopRepository shopRepository
     ) {
         this.plugin = Objects.requireNonNull(
                 plugin,
@@ -129,34 +92,6 @@ public final class ConfigurationReloadService {
                 shopRepository,
                 "shopRepository must not be null"
         );
-        this.attributeDefinitionValidator =
-                Objects.requireNonNull(
-                        attributeDefinitionValidator,
-                        "attributeDefinitionValidator must not be null"
-                );
-
-        this.enchantmentDefinitionValidator =
-                Objects.requireNonNull(
-                        enchantmentDefinitionValidator,
-                        "enchantmentDefinitionValidator must not be null"
-                );
-
-        this.effectDefinitionValidator =
-                Objects.requireNonNull(
-                        effectDefinitionValidator,
-                        "effectDefinitionValidator must not be null"
-                );
-
-        this.itemDefinitionValidator =
-                Objects.requireNonNull(
-                        itemDefinitionValidator,
-                        "itemDefinitionValidator must not be null"
-                );
-        this.shopDefinitionValidator =
-                Objects.requireNonNull(
-                        shopDefinitionValidator,
-                        "shopDefinitionValidator must not be null"
-                );
     }
 
     /**
@@ -177,18 +112,9 @@ public final class ConfigurationReloadService {
                 reloadItems();
                 reloadShop();
             }
-            case ATTRIBUTES -> {
-                reloadAttributes();
-                validateItems();
-            }
-            case ENCHANTMENTS -> {
-                reloadEnchantments();
-                validateItems();
-            }
-            case EFFECTS -> {
-                reloadEffects();
-                validateItems();
-            }
+            case ATTRIBUTES -> reloadAttributes();
+            case ENCHANTMENTS -> reloadEnchantments();
+            case EFFECTS -> reloadEffects();
             case SHOP -> reloadShop();
         }
 
@@ -231,7 +157,6 @@ public final class ConfigurationReloadService {
      */
     private void reloadItems() {
         itemRepository.load();
-        validateItems();
     }
 
     /**
@@ -239,10 +164,6 @@ public final class ConfigurationReloadService {
      */
     private void reloadAttributes() {
         attributeRepository.load();
-
-        attributeDefinitionValidator.validateAll(
-                attributeRepository.findAll().values()
-        );
     }
 
     /**
@@ -250,10 +171,6 @@ public final class ConfigurationReloadService {
      */
     private void reloadEnchantments() {
         enchantmentRepository.load();
-
-        enchantmentDefinitionValidator.validateAll(
-                enchantmentRepository.findAll()
-        );
     }
 
     /**
@@ -261,10 +178,6 @@ public final class ConfigurationReloadService {
      */
     private void reloadEffects() {
         effectRepository.load();
-
-        effectDefinitionValidator.validateAll(
-                effectRepository.findAll()
-        );
     }
 
     /**
@@ -272,25 +185,5 @@ public final class ConfigurationReloadService {
      */
     private void reloadShop() {
         shopRepository.load();
-
-        shopDefinitionValidator.validate(shopRepository.getShop());
-    }
-
-    /**
-     * 現在読み込まれている全Item定義を検証する。
-     */
-    private void validateItems() {
-        itemDefinitionValidator.validateAll(
-                itemRepository.findAll()
-        );
-    }
-
-    /**
-     * 現在読み込まれているSHOP定義を検証する。
-     */
-    private void validateShop() {
-        shopDefinitionValidator.validate(
-                shopRepository.getShop()
-        );
     }
 }

@@ -73,8 +73,7 @@ public class ShopCommand implements CommandExecutor, TabCompleter {
                 shopService.sellHandItem(player, amount);
                 return true;
             }
-            shopService.sellHandItem(player);
-            return true;
+            return shopService.sellHandItem(player);
         }
 
         player.sendMessage(MessageUtil.yellow("使用方法： /shop または /shop sell amount"));

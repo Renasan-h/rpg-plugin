@@ -2,6 +2,9 @@ package com.example.rpg;
 
 import com.example.rpg.admin.command.AdminCommand;
 import com.example.rpg.admin.service.ConfigurationReloadService;
+import com.example.rpg.analytics.listener.AnalyticsListener;
+import com.example.rpg.analytics.repository.InMemoryPurchaseStatisticsRepository;
+import com.example.rpg.analytics.repository.PurchaseStatisticsRepository;
 import com.example.rpg.command.DevHelpCommand;
 import com.example.rpg.command.ExpCommand;
 import com.example.rpg.command.MoneyCommand;
@@ -36,6 +39,7 @@ import com.example.rpg.service.ExpService;
 import com.example.rpg.shop.command.ShopCommand;
 import com.example.rpg.shop.facade.ShopFacade;
 import com.example.rpg.shop.listener.ShopListener;
+import com.example.rpg.shop.listener.ShopPurchaseLoggingListener;
 import com.example.rpg.shop.menu.ShopMenu;
 import com.example.rpg.shop.menu.pdc.ShopPdcKeys;
 import com.example.rpg.shop.repository.ShopPurchaseRepository;
@@ -109,6 +113,10 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * RPGエンチャント定義Repository
      */
     private IEnchantmentRepository enchantmentRepository;
+    /**
+     * RPG購入解析Repository
+     */
+    private PurchaseStatisticsRepository purchaseStatisticsRepository;
     /**
      * RPG効果定義Repository
      */
@@ -295,6 +303,8 @@ public class RpgPlugin extends JavaPlugin implements Listener {
 
         this.shopPurchaseRepository =
                 new ShopPurchaseRepository(this, new File(getDataFolder(), "shop-purchases.yml"));
+
+        this.purchaseStatisticsRepository = new InMemoryPurchaseStatisticsRepository();
     }
 
     /**
@@ -332,7 +342,8 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 shopPurchaseRepository,
                 itemPdcService,
                 itemFactory,
-                itemRepository
+                itemRepository,
+                businessEventPublisher
         );
         this.configurationReloadService =
                 new ConfigurationReloadService(
@@ -491,14 +502,61 @@ public class RpgPlugin extends JavaPlugin implements Listener {
 
     /**
      * Listenerを登録する。
-     *
      */
     private void registerListeners() {
-        getServer().getPluginManager().registerEvents(this, this);
-        getServer().getPluginManager().registerEvents(new ServerPingListener(), this);
-        getServer().getPluginManager().registerEvents(new BlockBreakListener(), this);
-        getServer().getPluginManager().registerEvents(new ShopListener(shopFacade), this);
-        getServer().getPluginManager().registerEvents(new EntityKillListener(moneyRepository, expService), this);
+        getServer()
+                .getPluginManager()
+                .registerEvents(this, this);
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new ServerPingListener(),
+                        this
+                );
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new BlockBreakListener(),
+                        this
+                );
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new ShopListener(shopFacade),
+                        this
+                );
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new ShopPurchaseLoggingListener(
+                                getLogger()
+                        ),
+                        this
+                );
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new AnalyticsListener(
+                                purchaseStatisticsRepository,
+                                getLogger()
+                        ),
+                        this
+                );
+
+        getServer()
+                .getPluginManager()
+                .registerEvents(
+                        new EntityKillListener(
+                                moneyRepository,
+                                expService
+                        ),
+                        this
+                );
     }
 
     /**

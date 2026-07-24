@@ -1,6 +1,7 @@
 package com.example.rpg.shop.service;
 
 import com.example.rpg.common.message.MessageUtil;
+import com.example.rpg.event.publisher.BusinessEventPublisher;
 import com.example.rpg.item.dto.ItemDto;
 import com.example.rpg.item.factory.interfaces.IItemFactory;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
@@ -8,11 +9,14 @@ import com.example.rpg.item.service.ItemPdcService;
 import com.example.rpg.repository.interfaces.IMoneyRepository;
 import com.example.rpg.shop.constants.ShopServiceConst;
 import com.example.rpg.shop.dto.ShopItemDto;
+import com.example.rpg.shop.event.ShopPurchaseCompletedEvent;
 import com.example.rpg.shop.repository.interfaces.IShopPurchaseRepository;
 import com.example.rpg.shop.repository.interfaces.IShopRepository;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.Objects;
 
 /**
  * SHOPに関連する業務処理を担当するService
@@ -55,6 +59,11 @@ public class ShopService {
     private final IItemFactory itemFactory;
 
     /**
+     * BusinessEvent発行処理。
+     */
+    private final BusinessEventPublisher businessEventPublisher;
+
+    /**
      * ShopServiceを生成する。
      *
      * @param shopRepository         SHOP定義Repository
@@ -63,6 +72,8 @@ public class ShopService {
      * @param itemPdcService         ItemPdc操作用サービス
      * @param itemFactory            RPGアイテム生成Factory
      * @param itemRepository         RPGアイテム定義Repository
+     * @param businessEventPublisher BusinessEvent発行処理
+     * @throws NullPointerException 引数がnullの場合
      */
     public ShopService(
             final IShopRepository shopRepository,
@@ -70,32 +81,69 @@ public class ShopService {
             final IShopPurchaseRepository shopPurchaseRepository,
             final ItemPdcService itemPdcService,
             final IItemFactory itemFactory,
-            final IItemRepository itemRepository
+            final IItemRepository itemRepository,
+            final BusinessEventPublisher businessEventPublisher
     ) {
-        this.shopRepository = shopRepository;
-        this.moneyRepository = moneyRepository;
-        this.shopPurchaseRepository = shopPurchaseRepository;
-        this.itemPdcService = itemPdcService;
-        this.itemFactory = itemFactory;
-        this.itemRepository = itemRepository;
+        this.shopRepository = Objects.requireNonNull(
+                shopRepository,
+                "shopRepository must not be null"
+        );
+        this.moneyRepository = Objects.requireNonNull(
+                moneyRepository,
+                "moneyRepository must not be null"
+        );
+        this.shopPurchaseRepository = Objects.requireNonNull(
+                shopPurchaseRepository,
+                "shopPurchaseRepository must not be null"
+        );
+        this.itemPdcService = Objects.requireNonNull(
+                itemPdcService,
+                "itemPdcService must not be null"
+        );
+        this.itemFactory = Objects.requireNonNull(
+                itemFactory,
+                "itemFactory must not be null"
+        );
+        this.itemRepository = Objects.requireNonNull(
+                itemRepository,
+                "itemRepository must not be null"
+        );
+        this.businessEventPublisher = Objects.requireNonNull(
+                businessEventPublisher,
+                "businessEventPublisher must not be null"
+        );
     }
 
     /**
      * 商品購入処理を実行する。
      *
-     * <p>購入可否の確認を決済前に完了させることで、
-     * 途中失敗時の返金処理を不要にする。</p>
+     * <p>
+     * 購入可否の確認を決済前に完了させることで、
+     * 途中失敗時の返金処理を不要にする。
+     * </p>
      *
      * @param player   購入者
      * @param shopItem 購入対象商品
      */
-    public void buy(Player player, ShopItemDto shopItem) {
+    public void buy(
+            Player player,
+            ShopItemDto shopItem
+    ) {
+        Objects.requireNonNull(
+                player,
+                "player must not be null"
+        );
+        Objects.requireNonNull(
+                shopItem,
+                "shopItem must not be null"
+        );
+
         if (!hasInventorySpace(player, shopItem)) {
             player.sendMessage(MessageUtil.red("インベントリに空きがありません。"));
             return;
         }
 
-        if (hasReachedPurchaseLimit(player, shopItem)) {
+        if (!hasReachedPurchaseLimit(player, shopItem)) {
             sendLimitReachedMessage(player, shopItem);
             return;
         }
@@ -107,8 +155,44 @@ public class ShopService {
 
         deliverProduct(player, shopItem);
         recordPurchase(player, shopItem);
+
+        /*
+         * 商品付与と購入履歴更新が完了した時点で、
+         * 購入完了という事実をイベントとして発行する。
+         */
+        publishPurchaseCompletedEvent(player, shopItem);
+
         sendPurchaseCompletedMessage(player, shopItem);
 
+    }
+
+    /**
+     * SHOP購入完了イベントを発行する。
+     *
+     * <p>
+     * このメソッドは商品付与および購入履歴更新が
+     * 正常に完了した後にのみ呼び出す。
+     * </p>
+     *
+     * @param player   購入者
+     * @param shopItem 購入したSHOP商品
+     */
+    private void publishPurchaseCompletedEvent(
+            final Player player,
+            final ShopItemDto shopItem
+    ) {
+        businessEventPublisher.publish(
+                new ShopPurchaseCompletedEvent(
+                        player.getUniqueId(),
+                        player.getName(),
+                        shopItem.getId(),
+                        shopItem.getItemId(),
+                        shopItem.getType(),
+                        shopItem.getAmount(),
+                        shopItem.getPrice(),
+                        shopItem.getLimit()
+                )
+        );
     }
 
     /**
@@ -127,13 +211,17 @@ public class ShopService {
     /**
      * 購入上限に到達しているか判定する。
      *
+     * <p>
+     * 0が指定された場合は、無制限のためtrueを返す。
+     * </p>
+     *
      * @param player   購入者
      * @param shopItem 購入対象商品
      * @return 購入上限に到達している場合true
      */
     private boolean hasReachedPurchaseLimit(Player player, ShopItemDto shopItem) {
-        if (shopItem.getLimit() < 0) {
-            return false;
+        if (shopItem.getLimit() == 0) {
+            return true;
         }
 
         int currentCount = shopPurchaseRepository.findPurchaseCount(
@@ -141,7 +229,7 @@ public class ShopService {
                 shopItem.getId()
         );
 
-        return currentCount >= shopItem.getLimit();
+        return currentCount <= shopItem.getLimit();
     }
 
     /**

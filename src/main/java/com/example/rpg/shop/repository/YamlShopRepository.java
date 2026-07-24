@@ -437,7 +437,7 @@ public final class YamlShopRepository extends AbstractYamlRepository<ShopDto> im
                         "limit",
                         shopItemId,
                         propertyRoot + ".limit",
-                        -1,
+                        0,
                         -1,
                         Integer.MAX_VALUE
                 );

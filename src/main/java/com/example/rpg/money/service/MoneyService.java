@@ -52,7 +52,7 @@ public class MoneyService {
     /**
      * プレイヤーの現在の所持金を取得します。
      *
-     * @param playerId プレイヤーID
+     * @param playerId プレイヤー ID
      * @return 現在の所持金
      */
     public int getBalance(final UUID playerId) {
@@ -67,7 +67,7 @@ public class MoneyService {
     /**
      * プレイヤーの所持金を加算します。
      *
-     * @param playerId プレイヤーID
+     * @param playerId プレイヤー ID
      * @param amount   加算額
      * @param reason   変更理由
      * @return 変更後の所持金
@@ -138,9 +138,10 @@ public class MoneyService {
      * @param amount   設定する所持金
      * @param reason   変更理由
      * @return 変更後の所持金
+     * @throws NullPointerException     playerIdまたはreasonがnullの場合
      * @throws IllegalArgumentException amountが負数の場合
      */
-    public int set(
+    public int setMoney(
             final UUID playerId,
             final int amount,
             final MoneyChangeReason reason
@@ -227,7 +228,7 @@ public class MoneyService {
     /**
      * Repositoryの所持金を更新し、所持金変更イベントを発行します。
      *
-     * @param playerId    プレイヤーID
+     * @param playerId    プレイヤー ID
      * @param beforeMoney 変更前の所持金
      * @param afterMoney  変更後の所持金
      * @param reason      変更理由

@@ -191,7 +191,7 @@ public class MoneyCommand implements CommandExecutor, TabCompleter {
         }
 
         final int afterAmount =
-                moneyService.set(
+                moneyService.setMoney(
                         target.getUniqueId(),
                         amount,
                         MoneyChangeReason.ADMIN_SET

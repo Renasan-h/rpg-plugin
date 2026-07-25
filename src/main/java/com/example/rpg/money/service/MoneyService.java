@@ -264,7 +264,7 @@ public class MoneyService {
     /**
      * 所持金変更処理に必要な共通引数を検証します。
      *
-     * @param playerId プレイヤーID
+     * @param playerId プレイヤー ID
      * @param reason   所持金の変更理由
      * @throws NullPointerException playerIdまたはreasonがnullの場合
      */
@@ -296,7 +296,7 @@ public class MoneyService {
             );
         }
     }
-    
+
     /**
      * 金額が0以上であることを検証します。
      *

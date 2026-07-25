@@ -1,7 +1,6 @@
 package com.example.rpg.command;
 
 import com.example.rpg.common.message.MessageUtil;
-import com.example.rpg.money.event.MoneyChangeReason;
 import com.example.rpg.money.exception.InsufficientMoneyException;
 import com.example.rpg.money.service.MoneyService;
 import org.bukkit.Bukkit;
@@ -70,13 +69,12 @@ public class PayCommand implements CommandExecutor {
         }
 
         try {
-            moneyService.removeMoney(fromPlayer.getUniqueId(), amount, MoneyChangeReason.PLAYER_PAYMENT_SENT);
+            moneyService.transfer(fromPlayer.getUniqueId(), toPlayer.getUniqueId(), amount);
         } catch (InsufficientMoneyException ex) {
             fromPlayer.sendMessage(MessageUtil.red("所持金が足りません。"));
             return false;
         }
 
-        moneyService.addMoney(toPlayer.getUniqueId(), amount, MoneyChangeReason.PLAYER_PAYMENT_RECEIVED);
         int senderMoney = moneyService.getBalance(fromPlayer.getUniqueId());
 
         fromPlayer.sendMessage(MessageUtil.mm("""

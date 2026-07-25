@@ -161,11 +161,7 @@ public class MoneyService {
                 reason
         );
 
-        if (amount < 0) {
-            throw new IllegalArgumentException(
-                    "amount must not be negative: " + amount
-            );
-        }
+        validateNonNegativeAmount(amount);
 
         final int beforeMoney = getBalance(playerId);
 
@@ -266,20 +262,6 @@ public class MoneyService {
     }
 
     /**
-     * 金額が正数であることを検証します。
-     *
-     * @param amount 検証対象の金額
-     * @throws IllegalArgumentException amountが0以下の場合
-     */
-    private void validatePositiveAmount(final int amount) {
-        if (amount <= 0) {
-            throw new IllegalArgumentException(
-                    "amount must be greater than zero: " + amount
-            );
-        }
-    }
-
-    /**
      * 所持金変更処理に必要な共通引数を検証します。
      *
      * @param playerId プレイヤーID
@@ -299,5 +281,35 @@ public class MoneyService {
                 reason,
                 "reason must not be null"
         );
+    }
+
+    /**
+     * 金額が正数であることを検証します。
+     *
+     * @param amount 検証対象の金額
+     * @throws IllegalArgumentException amountが0以下の場合
+     */
+    private void validatePositiveAmount(final int amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException(
+                    "amount must be greater than zero: " + amount
+            );
+        }
+    }
+    
+    /**
+     * 金額が0以上であることを検証します。
+     *
+     * <p>所持金を0Gへ設定する操作は許可します。</p>
+     *
+     * @param amount 検証対象の金額
+     * @throws IllegalArgumentException amountが負数の場合
+     */
+    private void validateNonNegativeAmount(final int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException(
+                    "amount must not be negative: " + amount
+            );
+        }
     }
 }

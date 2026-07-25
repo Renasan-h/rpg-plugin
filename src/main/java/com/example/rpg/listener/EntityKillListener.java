@@ -1,8 +1,9 @@
 package com.example.rpg.listener;
 
 import com.example.rpg.common.message.MessageUtil;
-import com.example.rpg.repository.interfaces.IMoneyRepository;
-import com.example.rpg.service.ExpService;
+import com.example.rpg.exp.service.ExpService;
+import com.example.rpg.money.event.MoneyChangeReason;
+import com.example.rpg.money.service.MoneyService;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -10,18 +11,21 @@ import org.bukkit.event.entity.EntityDeathEvent;
 
 public class EntityKillListener implements Listener {
 
-    private final IMoneyRepository moneyRepository;
+    /**
+     * 所持金管理Service
+     */
+    private final MoneyService moneyService;
     private final ExpService expService;
 
-    public EntityKillListener(IMoneyRepository moneyRepository, ExpService expService) {
-        this.moneyRepository = moneyRepository;
+    public EntityKillListener(MoneyService moneyService, ExpService expService) {
+        this.moneyService = moneyService;
         this.expService = expService;
     }
 
     /**
      * 倒した敵に対応するお金と経験値を取得するためのリスナー
-     * TODO: 将来的にはDBで取得ゴールド周りの管理を行いたい
-     * param event 死亡イベント
+     *
+     * @param event 死亡イベント
      */
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
@@ -42,7 +46,7 @@ public class EntityKillListener implements Listener {
             default -> new int[] {5, 10};
         };
 
-        int totalMoney = moneyRepository.addMoney(killer.getUniqueId(), reward[0]);
+        int totalMoney = moneyService.addMoney(killer.getUniqueId(), reward[0], MoneyChangeReason.MONSTER_REWARD);
         int currentExp = expService.addExp(killer.getUniqueId(), reward[1]);
 
         killer.sendMessage(MessageUtil.mm("""
@@ -51,7 +55,5 @@ public class EntityKillListener implements Listener {
         killer.sendMessage(MessageUtil.mm("""
                 <gold> %d Exp</gold> <gray>獲得しました。 </gray><yellow>経験値: %d Exp</yellow>""".formatted(reward[1], currentExp))
         );
-
     }
-
 }

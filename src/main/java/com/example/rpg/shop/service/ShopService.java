@@ -6,7 +6,8 @@ import com.example.rpg.item.dto.ItemDto;
 import com.example.rpg.item.factory.interfaces.IItemFactory;
 import com.example.rpg.item.repository.interfaces.IItemRepository;
 import com.example.rpg.item.service.ItemPdcService;
-import com.example.rpg.repository.interfaces.IMoneyRepository;
+import com.example.rpg.money.event.MoneyChangeReason;
+import com.example.rpg.money.service.MoneyService;
 import com.example.rpg.shop.constants.ShopServiceConst;
 import com.example.rpg.shop.dto.ShopItemDto;
 import com.example.rpg.shop.event.ShopPurchaseCompletedEvent;
@@ -39,14 +40,14 @@ public class ShopService {
     private final IShopPurchaseRepository shopPurchaseRepository;
 
     /**
-     * RPG所持金管理Repository
-     */
-    private final IMoneyRepository moneyRepository;
-
-    /**
      * RPGアイテム定義Repository
      */
     private final IItemRepository itemRepository;
+
+    /**
+     * 所持金操作Service
+     */
+    private final MoneyService moneyService;
 
     /**
      * ItemPersistentDataContainer操作Service
@@ -67,30 +68,26 @@ public class ShopService {
      * ShopServiceを生成する。
      *
      * @param shopRepository         SHOP定義Repository
-     * @param moneyRepository        所持金Repository
      * @param shopPurchaseRepository 購入履歴Repository
-     * @param itemPdcService         ItemPdc操作用サービス
+     * @param itemPdcService         ItemPdc操作用Service
      * @param itemFactory            RPGアイテム生成Factory
      * @param itemRepository         RPGアイテム定義Repository
      * @param businessEventPublisher BusinessEvent発行処理
+     * @param moneyService           所持金Service
      * @throws NullPointerException 引数がnullの場合
      */
     public ShopService(
             final IShopRepository shopRepository,
-            final IMoneyRepository moneyRepository,
             final IShopPurchaseRepository shopPurchaseRepository,
             final ItemPdcService itemPdcService,
             final IItemFactory itemFactory,
             final IItemRepository itemRepository,
-            final BusinessEventPublisher businessEventPublisher
+            final BusinessEventPublisher businessEventPublisher,
+            final MoneyService moneyService
     ) {
         this.shopRepository = Objects.requireNonNull(
                 shopRepository,
                 "shopRepository must not be null"
-        );
-        this.moneyRepository = Objects.requireNonNull(
-                moneyRepository,
-                "moneyRepository must not be null"
         );
         this.shopPurchaseRepository = Objects.requireNonNull(
                 shopPurchaseRepository,
@@ -111,6 +108,10 @@ public class ShopService {
         this.businessEventPublisher = Objects.requireNonNull(
                 businessEventPublisher,
                 "businessEventPublisher must not be null"
+        );
+        this.moneyService = Objects.requireNonNull(
+                moneyService,
+                "moneyRepository must not be null"
         );
     }
 
@@ -148,7 +149,9 @@ public class ShopService {
             return;
         }
 
-        if (!withdrawMoney(player, shopItem)) {
+        try {
+            final int currentBalance = withdrawMoney(player, shopItem);
+        } catch (Exception e) {
             sendInsufficientMoneyMessage(player, shopItem);
             return;
         }
@@ -256,10 +259,10 @@ public class ShopService {
      *
      * @param player   購入者
      * @param shopItem 購入対象商品
-     * @return 支払いに成功した場合true
+     * @return 支払い後の所持金
      */
-    private boolean withdrawMoney(Player player, ShopItemDto shopItem) {
-        return moneyRepository.subtractMoney(player.getUniqueId(), shopItem.getPrice());
+    private int withdrawMoney(Player player, ShopItemDto shopItem) {
+        return moneyService.removeMoney(player.getUniqueId(), shopItem.getPrice(), MoneyChangeReason.SHOP_PURCHASE);
     }
 
     /**
@@ -269,7 +272,7 @@ public class ShopService {
      * @param shopItem 購入対象商品
      */
     private void sendInsufficientMoneyMessage(Player player, ShopItemDto shopItem) {
-        int currentMoney = moneyRepository.findMoney(player.getUniqueId());
+        int currentMoney = moneyService.getBalance(player.getUniqueId());
 
         player.sendMessage(MessageUtil.red("所持金が足りません。"));
         player.sendMessage(MessageUtil.mm(
@@ -447,7 +450,7 @@ public class ShopService {
      * @param amount 加算する金額
      */
     private void depositMoney(final Player player, final int amount) {
-        moneyRepository.addMoney(player.getUniqueId(), amount);
+        moneyService.addMoney(player.getUniqueId(), amount, MoneyChangeReason.SHOP_SELL);
     }
 
     /**

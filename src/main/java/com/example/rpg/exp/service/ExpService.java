@@ -1,10 +1,10 @@
-package com.example.rpg.service;
+package com.example.rpg.exp.service;
 
 import org.bukkit.event.Listener;
 
-import java.util.UUID;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 経験値を管理するためのサービス
@@ -15,7 +15,7 @@ public class ExpService implements Listener {
 
     private final Map<UUID, Integer> expMap = new HashMap<>();
 
-    public int getExp(UUID playerId){
+    public int getExp(UUID playerId) {
         return expMap.getOrDefault(playerId, 0);
     }
 

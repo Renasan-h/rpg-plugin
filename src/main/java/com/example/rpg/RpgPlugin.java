@@ -12,6 +12,7 @@ import com.example.rpg.command.PayCommand;
 import com.example.rpg.common.message.MessageUtil;
 import com.example.rpg.event.publisher.BukkitBusinessEventPublisher;
 import com.example.rpg.event.publisher.BusinessEventPublisher;
+import com.example.rpg.exp.service.ExpService;
 import com.example.rpg.item.assembler.ItemAssembler;
 import com.example.rpg.item.assembler.interfaces.IItemAssembler;
 import com.example.rpg.item.factory.ItemFactory;
@@ -33,9 +34,10 @@ import com.example.rpg.item.validator.ItemDefinitionValidator;
 import com.example.rpg.listener.BlockBreakListener;
 import com.example.rpg.listener.EntityKillListener;
 import com.example.rpg.listener.ServerPingListener;
+import com.example.rpg.money.event.MoneyChangeReason;
+import com.example.rpg.money.service.MoneyService;
 import com.example.rpg.repository.MoneyRepository;
 import com.example.rpg.repository.interfaces.IMoneyRepository;
-import com.example.rpg.service.ExpService;
 import com.example.rpg.shop.command.ShopCommand;
 import com.example.rpg.shop.facade.ShopFacade;
 import com.example.rpg.shop.listener.ShopListener;
@@ -88,7 +90,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
     /**
      * 経験値取得サービス
      */
-    ExpService expService;
+    private ExpService expService;
     /**
      * YamlShopRepository
      */
@@ -97,6 +99,10 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * 所持金Repository
      */
     private IMoneyRepository moneyRepository;
+    /**
+     * 所持金管理サービス
+     */
+    private MoneyService moneyService;
     /**
      * 購入履歴Repository
      */
@@ -336,14 +342,16 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         this.expService = new ExpService();
 
         this.itemPdcService = new ItemPdcService(itemPdcKeys);
+
+        this.moneyService = new MoneyService(moneyRepository, businessEventPublisher);
         this.shopService = new ShopService(
                 shopRepository,
-                moneyRepository,
                 shopPurchaseRepository,
                 itemPdcService,
                 itemFactory,
                 itemRepository,
-                businessEventPublisher
+                businessEventPublisher,
+                moneyService
         );
         this.configurationReloadService =
                 new ConfigurationReloadService(
@@ -475,18 +483,17 @@ public class RpgPlugin extends JavaPlugin implements Listener {
 
     /**
      * コマンドを登録する。
-     *
      */
     private void registerCommands() {
         ShopCommand shopCommand = new ShopCommand(shopFacade, shopService);
         Objects.requireNonNull(getCommand("shop")).setExecutor(shopCommand);
         Objects.requireNonNull(getCommand("shop")).setTabCompleter(shopCommand);
 
-        MoneyCommand moneyCommand = new MoneyCommand(moneyRepository);
+        MoneyCommand moneyCommand = new MoneyCommand(moneyService);
         Objects.requireNonNull(getCommand("money")).setExecutor(moneyCommand);
         Objects.requireNonNull(getCommand("money")).setTabCompleter(moneyCommand);
 
-        Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(moneyRepository));
+        Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(moneyService));
         Objects.requireNonNull(getCommand("exp")).setExecutor(new ExpCommand(expService));
 
         final AdminCommand adminCommand = new AdminCommand(configurationReloadService, shopPurchaseRepository);
@@ -552,7 +559,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 .getPluginManager()
                 .registerEvents(
                         new EntityKillListener(
-                                moneyRepository,
+                                moneyService,
                                 expService
                         ),
                         this
@@ -626,19 +633,23 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * @param event 発生イベント
      */
     @EventHandler
-    public void onRespown(PlayerRespawnEvent event) {
-        Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
+    public void onRespawn(PlayerRespawnEvent event) {
+        final Player player = event.getPlayer();
+        final UUID uuid = player.getUniqueId();
 
         // プレイヤーがリスポーンした際に、所持金の30%を失う。
         // 銀行に預けているお金は減らない
-        int currentMoney = moneyRepository.findMoney(uuid);
-        int result = (int) Math.ceil(currentMoney * RESPAWN_PENALTY);
+        final int currentMoney = moneyService.getBalance(uuid);
+        final int penaltyAmount = (int) Math.ceil(currentMoney * RESPAWN_PENALTY);
 
-        moneyRepository.subtractMoney(player.getUniqueId(), result);
+        if (penaltyAmount <= 0) {
+            return;
+        }
+
+        moneyService.removeMoney(player.getUniqueId(), penaltyAmount, MoneyChangeReason.RESPAWN_PENALTY);
 
         player.sendMessage(MessageUtil.red(
-                "所持金が" + result + "G 減少しました。"
+                "所持金が" + penaltyAmount + "G 減少しました。"
         ));
     }
 

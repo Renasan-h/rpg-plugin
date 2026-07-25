@@ -615,7 +615,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         player.sendMessage(MessageUtil.mm(
                 "<yellow>Lv." + player.getLevel()
                         + "(Exp:" + String.format("%.2f", player.getExp() * 100) + ")</yellow> "
-                        + "<green>Money </green><gold>" + moneyRepository.findMoney(player.getUniqueId()) + "G</gold>"
+                        + "<green>Money </green><gold>" + moneyService.getBalance(player.getUniqueId()) + "G</gold>"
         ));
 
         player.sendMessage(MessageUtil.mm(

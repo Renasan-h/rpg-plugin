@@ -5,7 +5,6 @@ import com.example.rpg.money.event.MoneyChangeReason;
 import com.example.rpg.money.event.MoneyChangedEvent;
 import com.example.rpg.money.exception.InsufficientMoneyException;
 import com.example.rpg.repository.interfaces.IMoneyRepository;
-import org.bukkit.event.Listener;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -16,7 +15,7 @@ import java.util.UUID;
  * <p>所持金の参照・加算・減算・設定は、このサービスを経由して行います。
  * 呼び出し側がMoneyRepositoryを直接操作することは想定していません。</p>
  */
-public class MoneyService implements Listener {
+public class MoneyService {
 
     /**
      * 所持金Repository
@@ -177,15 +176,18 @@ public class MoneyService implements Listener {
      * 送金元プレイヤーから送金先プレイヤーへ所持金を移動します。
      *
      * <p>
-     * 現状のYAML Repositoryではトランザクションを利用できないため、
-     * 送金元の減産後に送金先の加算が失敗すると不整合が発生する可能性がある。
-     * 将来DBへ移行する際はトランザクション化を行う
+     * 現在のYAML Repositoryではトランザクションを利用できないため、
+     * 送金元の減算後に送金先の加算が失敗すると、
+     * 所持金データに不整合が発生する可能性があります。
+     * 将来データベースへ移行する際は、送金処理をトランザクション化します。
      * </p>
      *
      * @param senderId   送金元プレイヤーID
      * @param receiverId 送金先プレイヤーID
-     * @param amount     金額
-     * @throws IllegalArgumentException 同じプレイヤーへの送金、またはamountが0以下の場合
+     * @param amount     送金額
+     * @throws NullPointerException       senderIdまたはreceiverIdがnullの場合
+     * @throws IllegalArgumentException   同一プレイヤーへの送金、またはamountが0以下の場合
+     * @throws InsufficientMoneyException 送金元の所持金が不足している場合
      */
     public void transfer(
             final UUID senderId,
@@ -223,12 +225,12 @@ public class MoneyService implements Listener {
     }
 
     /**
-     * Repositoryを更新し、所持金変更イベントを発行する。
+     * Repositoryの所持金を更新し、所持金変更イベントを発行します。
      *
      * @param playerId    プレイヤーID
      * @param beforeMoney 変更前の所持金
      * @param afterMoney  変更後の所持金
-     * @param reason      編子理由
+     * @param reason      変更理由
      */
     private void updateBalance(
             final UUID playerId,
@@ -257,10 +259,10 @@ public class MoneyService implements Listener {
     }
 
     /**
-     * 金額の検証
+     * 金額が正数であることを検証します。
      *
-     * @param amount 金額
-     * @throws IllegalArgumentException amountが0以外の場合
+     * @param amount 検証対象の金額
+     * @throws IllegalArgumentException amountが0以下の場合
      */
     private void validatePositiveAmount(final int amount) {
         if (amount <= 0) {

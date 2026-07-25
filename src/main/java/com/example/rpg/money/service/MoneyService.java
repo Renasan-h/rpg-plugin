@@ -77,6 +77,11 @@ public class MoneyService {
             final int amount,
             final MoneyChangeReason reason
     ) {
+        validateChangeArguments(
+                playerId,
+                reason
+        );
+
         validatePositiveAmount(amount);
 
         final int beforeMoney = getBalance(playerId);
@@ -107,6 +112,11 @@ public class MoneyService {
             final int amount,
             final MoneyChangeReason reason
     ) {
+        validateChangeArguments(
+                playerId,
+                reason
+        );
+
         validatePositiveAmount(amount);
 
         final int beforeMoney = getBalance(playerId);
@@ -146,13 +156,9 @@ public class MoneyService {
             final int amount,
             final MoneyChangeReason reason
     ) {
-        Objects.requireNonNull(
+        validateChangeArguments(
                 playerId,
-                "playerId must not be null"
-        );
-        Objects.requireNonNull(
-                reason,
-                "reason must not be null"
+                reason
         );
 
         if (amount < 0) {
@@ -271,5 +277,27 @@ public class MoneyService {
                     "amount must be greater than zero: " + amount
             );
         }
+    }
+
+    /**
+     * 所持金変更処理に必要な共通引数を検証します。
+     *
+     * @param playerId プレイヤーID
+     * @param reason   所持金の変更理由
+     * @throws NullPointerException playerIdまたはreasonがnullの場合
+     */
+    private void validateChangeArguments(
+            final UUID playerId,
+            final MoneyChangeReason reason
+    ) {
+        Objects.requireNonNull(
+                playerId,
+                "playerId must not be null"
+        );
+
+        Objects.requireNonNull(
+                reason,
+                "reason must not be null"
+        );
     }
 }

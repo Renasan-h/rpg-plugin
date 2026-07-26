@@ -39,6 +39,11 @@ public enum MoneyChangeReason {
     PLAYER_PAYMENT_RECEIVED,
 
     /**
+     * 銀行への入金による手持ち所持金の減少
+     */
+    BANK_DEPOSIT,
+
+    /**
      * 管理者による加算
      */
     ADMIN_ADD,

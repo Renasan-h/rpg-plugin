@@ -1,5 +1,6 @@
 package com.example.rpg.bank.service;
 
+import com.example.rpg.bank.exception.InsufficientBankBalanceException;
 import com.example.rpg.bank.repository.IBankRepository;
 import com.example.rpg.event.publisher.BusinessEventPublisher;
 import com.example.rpg.money.event.MoneyChangeReason;
@@ -121,6 +122,54 @@ public class BankService {
                 playerId,
                 amount
         );
+
+        return afterBalance;
+    }
+
+    /**
+     * 銀行残高から手持ち所持金へ出金します。
+     *
+     * <p>
+     * 銀行残高が出金額未満の場合は、
+     * {@link InsufficientBankBalanceException}を送出します。
+     * 銀行残高の減算後、MoneyServiceを経由して
+     * 手持ち所持金へ出金額を加算します。
+     * </p>
+     *
+     * @param playerId 出金するプレイヤーのUUID
+     * @param amount   出金額
+     * @return 出金後の銀行残高
+     * @throws NullPointerException             playerIdがnullの場合
+     * @throws IllegalArgumentException         amountが0以下の場合
+     * @throws InsufficientBankBalanceException 銀行残高が不足している場合
+     * @throws ArithmeticException              手持ち所持金の加算時にオーバーフローした場合
+     */
+    public int withdraw(
+            final UUID playerId,
+            final int amount
+    ) {
+        Objects.requireNonNull(
+                playerId,
+                "playerId must not be null"
+        );
+
+        validateAmount(amount);
+
+        final int beforeBalance = bankRepository.findBalance(playerId);
+
+        if (beforeBalance < amount) {
+            throw new InsufficientBankBalanceException(
+                    playerId,
+                    beforeBalance,
+                    amount
+            );
+        }
+
+        final int afterBalance = beforeBalance - amount;
+
+        bankRepository.setBalance(playerId, amount);
+
+        moneyService.addMoney(playerId, amount, MoneyChangeReason.BANK_WITHDRAW);
 
         return afterBalance;
     }

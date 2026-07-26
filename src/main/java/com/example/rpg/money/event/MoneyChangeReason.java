@@ -44,6 +44,11 @@ public enum MoneyChangeReason {
     BANK_DEPOSIT,
 
     /**
+     * 銀行からの出金による手持ち所持金の増加
+     */
+    BANK_WITHDRAW,
+    
+    /**
      * 管理者による加算
      */
     ADMIN_ADD,

@@ -47,7 +47,17 @@ public enum MoneyChangeReason {
      * 銀行からの出金による手持ち所持金の増加
      */
     BANK_WITHDRAW,
-    
+
+    /**
+     * 銀行からの送金銀行残高の減少
+     */
+    BANK_TRANSFER_SEND,
+
+    /**
+     * 銀行からの送金銀行残高の増加
+     */
+    BANK_TRANSFER_RECEIVED,
+
     /**
      * 管理者による加算
      */

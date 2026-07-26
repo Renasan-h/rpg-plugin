@@ -96,10 +96,7 @@ public class BankService {
             final UUID playerId,
             final int amount
     ) {
-        Objects.requireNonNull(
-                playerId,
-                "playerId must not be null"
-        );
+        validatePlayerId(playerId);
 
         validatePositiveAmount(amount);
 
@@ -148,10 +145,7 @@ public class BankService {
             final UUID playerId,
             final int amount
     ) {
-        Objects.requireNonNull(
-                playerId,
-                "playerId must not be null"
-        );
+        validatePlayerId(playerId);
 
         validateAmount(amount);
 
@@ -172,6 +166,66 @@ public class BankService {
         moneyService.addMoney(playerId, amount, MoneyChangeReason.BANK_WITHDRAW);
 
         return afterBalance;
+    }
+
+    /**
+     * 送金元プレイヤーの銀行残高から、
+     * 送金先プレイヤーの銀行残高へ送金します。
+     *
+     * <p>
+     * 送金先プレイヤーがオフラインの場合でも、
+     * UUIDを指定できれば銀行残高へ自動的に加算されます。
+     * </p>
+     *
+     * @param senderId   送金元プレイヤーのUUID
+     * @param receiverId 送金先プレイヤーのUUID
+     * @param amount     送金額
+     * @throws NullPointerException             senderIdまたはreceiverIdがnullの場合
+     * @throws IllegalArgumentException         amountが0以下の場合、または送金元と送金先が同一の場合
+     * @throws InsufficientBankBalanceException 送金元の銀行残高が不足している場合
+     * @throws ArithmeticException              送金先の銀行残高加算時にオーバーフローした場合
+     */
+    public void transfer(
+            final UUID senderId,
+            final UUID receiverId,
+            final int amount
+    ) {
+        Objects.requireNonNull(
+                senderId,
+                "senderId must not be null"
+        );
+
+        Objects.requireNonNull(
+                receiverId,
+                "receiverId must not be null"
+        );
+
+        validateAmount(amount);
+
+        if (receiverId.equals(senderId)) {
+            throw new IllegalArgumentException(
+                    "senderId and receiverId must be different"
+            );
+        }
+
+        final int senderBalance = bankRepository.findBalance(senderId);
+
+        if (senderBalance < amount) {
+            throw new InsufficientBankBalanceException(
+                    senderId,
+                    senderBalance,
+                    amount
+            );
+        }
+
+        final int receiverBalance = bankRepository.findBalance(receiverId);
+
+        final int updatedSenderBalance = senderBalance - amount;
+
+        final int updatedReceiverBalance = Math.addExact(receiverBalance, amount);
+
+        bankRepository.setBalance(senderId, updatedSenderBalance);
+        bankRepository.setBalance(receiverId, updatedReceiverBalance);
     }
 
     /**

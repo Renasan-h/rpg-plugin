@@ -157,7 +157,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      */
     private EffectDefinitionValidator effectDefinitionValidator;
     /**
-     * SHOP定義Validatror
+     * SHOP定義Validator
      */
     private ShopDefinitionValidator shopDefinitionValidator;
     /**
@@ -192,15 +192,6 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * 銀行残高Repository
      */
     private IBankRepository bankRepository;
-    /**
-     * YAML銀行残高Repository
-     *
-     * <p>
-     * load、saveはYAML実装固有のライフサイクル処理であるため、
-     * 具象型として保持します。
-     * </p>
-     */
-    private YamlBankRepository yamlBankRepository;
     /**
      * 銀行業務Service
      */
@@ -450,6 +441,11 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 shopService,
                 shopPdcKeys
         );
+
+        this.bankFacade =
+                new BankFacade(
+                        bankService
+                );
     }
 
     /**
@@ -531,7 +527,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(getCommand("money")).setExecutor(moneyCommand);
         Objects.requireNonNull(getCommand("money")).setTabCompleter(moneyCommand);
 
-        BankCommand bankCommand = new BankCommand(new BankFacade(bankService));
+        BankCommand bankCommand = new BankCommand(bankFacade);
         Objects.requireNonNull(getCommand("bank")).setExecutor(bankCommand);
         Objects.requireNonNull(getCommand("bank")).setTabCompleter(bankCommand);
 
@@ -733,9 +729,7 @@ public class RpgPlugin extends JavaPlugin implements Listener {
                 reloadItemDefinitions();
             }
             case "config", "shop" -> reloadConfig();
-            case "items", "attributes", "enchantments", "effects" -> {
-                reloadConfig();
-            }
+            case "items", "attributes", "enchantments", "effects" -> reloadConfig();
             default -> throw new IllegalArgumentException(
                     "Unsupported reload target: " + target
             );

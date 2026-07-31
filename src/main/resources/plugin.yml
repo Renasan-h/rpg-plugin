@@ -9,6 +9,9 @@ commands:
   money:
     description: 所持金を確認します
     usage: /money
+  bank:
+    description: 銀行システムコマンド
+    usage: /bank [balance|deposit|withdraw|transfer] [<amount>|<player>] [<amount>]
   exp:
     description: 現在の経験値を確認します
     usage: /exp

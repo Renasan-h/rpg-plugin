@@ -119,6 +119,34 @@ public class YamlBankRepository implements IBankRepository {
         return amount;
     }
 
+    @Override
+    public void setBalances(
+            final Map<UUID, Integer> balances
+    ) {
+        Objects.requireNonNull(
+                balances,
+                "balances must not be null"
+        );
+
+        for (final Map.Entry<UUID, Integer> entry : balances.entrySet()) {
+            final UUID playerId = Objects.requireNonNull(
+                    entry.getKey(),
+                    "playerId must not be null"
+            );
+
+            final int balance = entry.getValue();
+
+            if (balance < 0) {
+                throw new IllegalArgumentException(
+                        "amount must not be negative: " + balance
+                );
+            }
+
+            balanceMap.put(playerId, balance);
+        }
+        save();
+    }
+
     /**
      * {@code bank.yml}から銀行残高を読み込みます。
      *

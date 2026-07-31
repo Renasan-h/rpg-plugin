@@ -5,6 +5,11 @@ import com.example.rpg.admin.service.ConfigurationReloadService;
 import com.example.rpg.analytics.listener.AnalyticsListener;
 import com.example.rpg.analytics.repository.InMemoryPurchaseStatisticsRepository;
 import com.example.rpg.analytics.repository.PurchaseStatisticsRepository;
+import com.example.rpg.bank.command.BankCommand;
+import com.example.rpg.bank.facade.BankFacade;
+import com.example.rpg.bank.repository.IBankRepository;
+import com.example.rpg.bank.repository.YamlBankRepository;
+import com.example.rpg.bank.service.BankService;
 import com.example.rpg.command.DevHelpCommand;
 import com.example.rpg.command.ExpCommand;
 import com.example.rpg.command.MoneyCommand;
@@ -183,6 +188,27 @@ public class RpgPlugin extends JavaPlugin implements Listener {
      * BusinessEvent発行処理。
      */
     private BusinessEventPublisher businessEventPublisher;
+    /**
+     * 銀行残高Repository
+     */
+    private IBankRepository bankRepository;
+    /**
+     * YAML銀行残高Repository
+     *
+     * <p>
+     * load、saveはYAML実装固有のライフサイクル処理であるため、
+     * 具象型として保持します。
+     * </p>
+     */
+    private YamlBankRepository yamlBankRepository;
+    /**
+     * 銀行業務Service
+     */
+    private BankService bankService;
+    /**
+     * 銀行Facade
+     */
+    private BankFacade bankFacade;
 
     /**
      * プラグイン有効化時の初期化処理。
@@ -310,7 +336,12 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         this.shopPurchaseRepository =
                 new ShopPurchaseRepository(this, new File(getDataFolder(), "shop-purchases.yml"));
 
+        final YamlBankRepository bankRepository = new YamlBankRepository(this);
+        bankRepository.load();
+        this.bankRepository = bankRepository;
+
         this.purchaseStatisticsRepository = new InMemoryPurchaseStatisticsRepository();
+
     }
 
     /**
@@ -344,6 +375,13 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         this.itemPdcService = new ItemPdcService(itemPdcKeys);
 
         this.moneyService = new MoneyService(moneyRepository, businessEventPublisher);
+
+        this.bankService =
+                new BankService(
+                        bankRepository,
+                        moneyService,
+                        businessEventPublisher
+                );
         this.shopService = new ShopService(
                 shopRepository,
                 shopPurchaseRepository,
@@ -492,6 +530,10 @@ public class RpgPlugin extends JavaPlugin implements Listener {
         MoneyCommand moneyCommand = new MoneyCommand(moneyService);
         Objects.requireNonNull(getCommand("money")).setExecutor(moneyCommand);
         Objects.requireNonNull(getCommand("money")).setTabCompleter(moneyCommand);
+
+        BankCommand bankCommand = new BankCommand(new BankFacade(bankService));
+        Objects.requireNonNull(getCommand("bank")).setExecutor(bankCommand);
+        Objects.requireNonNull(getCommand("bank")).setTabCompleter(bankCommand);
 
         Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(moneyService));
         Objects.requireNonNull(getCommand("exp")).setExecutor(new ExpCommand(expService));

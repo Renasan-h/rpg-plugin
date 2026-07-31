@@ -1,11 +1,14 @@
 package com.example.rpg.bank.service;
 
+import com.example.rpg.bank.event.BankBalanceChangeReason;
+import com.example.rpg.bank.event.BankBalanceChangedEvent;
 import com.example.rpg.bank.exception.InsufficientBankBalanceException;
 import com.example.rpg.bank.repository.IBankRepository;
 import com.example.rpg.event.publisher.BusinessEventPublisher;
 import com.example.rpg.money.event.MoneyChangeReason;
 import com.example.rpg.money.service.MoneyService;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -79,18 +82,9 @@ public class BankService {
     /**
      * 手持ち所持金から銀行へ入金します。
      *
-     * <p>
-     * 手持ち所持金の減算処理はMoneyServiceへ委譲します。
-     * 所持金が不足している場合は、MoneyServiceから
-     * InsufficientMoneyExceptionが送出されます。
-     * </p>
-     *
      * @param playerId 入金するプレイヤーのUUID
      * @param amount   入金額
      * @return 入金後の銀行残高
-     * @throws NullPointerException     playerIdがnullの場合
-     * @throws IllegalArgumentException amountが0以下の場合
-     * @throws ArithmeticException      銀行残高の加算時にオーバーフローした場合
      */
     public int deposit(
             final UUID playerId,
@@ -99,12 +93,6 @@ public class BankService {
         validatePlayerId(playerId);
 
         validatePositiveAmount(amount);
-
-        moneyService.removeMoney(
-                playerId,
-                amount,
-                MoneyChangeReason.BANK_DEPOSIT
-        );
 
         final int beforeBalance =
                 bankRepository.findBalance(playerId);
@@ -115,9 +103,17 @@ public class BankService {
                         amount
                 );
 
-        bankRepository.setBalance(
+        moneyService.removeMoney(
                 playerId,
-                amount
+                amount,
+                MoneyChangeReason.BANK_DEPOSIT
+        );
+
+        updateBalance(
+                playerId,
+                beforeBalance,
+                afterBalance,
+                BankBalanceChangeReason.DEPOSIT
         );
 
         return afterBalance;
@@ -126,20 +122,9 @@ public class BankService {
     /**
      * 銀行残高から手持ち所持金へ出金します。
      *
-     * <p>
-     * 銀行残高が出金額未満の場合は、
-     * {@link InsufficientBankBalanceException}を送出します。
-     * 銀行残高の減算後、MoneyServiceを経由して
-     * 手持ち所持金へ出金額を加算します。
-     * </p>
-     *
      * @param playerId 出金するプレイヤーのUUID
      * @param amount   出金額
      * @return 出金後の銀行残高
-     * @throws NullPointerException             playerIdがnullの場合
-     * @throws IllegalArgumentException         amountが0以下の場合
-     * @throws InsufficientBankBalanceException 銀行残高が不足している場合
-     * @throws ArithmeticException              手持ち所持金の加算時にオーバーフローした場合
      */
     public int withdraw(
             final UUID playerId,
@@ -159,10 +144,24 @@ public class BankService {
             );
         }
 
+        final int beforeMoney = moneyService.getBalance(playerId);
+
+        // 銀行残高を変更する前に所持金のオーバーフローを検知する
+        Math.addExact(
+                beforeMoney,
+                amount
+        );
+
         final int afterBalance = beforeBalance - amount;
 
-        bankRepository.setBalance(playerId, amount);
+        updateBalance(
+                playerId,
+                beforeBalance,
+                afterBalance,
+                BankBalanceChangeReason.WITHDRAW
+        );
 
+        // MoneyServiceがMoneyChangedEventを発行する。
         moneyService.addMoney(playerId, amount, MoneyChangeReason.BANK_WITHDRAW);
 
         return afterBalance;
@@ -172,18 +171,9 @@ public class BankService {
      * 送金元プレイヤーの銀行残高から、
      * 送金先プレイヤーの銀行残高へ送金します。
      *
-     * <p>
-     * 送金先プレイヤーがオフラインの場合でも、
-     * UUIDを指定できれば銀行残高へ自動的に加算されます。
-     * </p>
-     *
      * @param senderId   送金元プレイヤーのUUID
      * @param receiverId 送金先プレイヤーのUUID
      * @param amount     送金額
-     * @throws NullPointerException             senderIdまたはreceiverIdがnullの場合
-     * @throws IllegalArgumentException         amountが0以下の場合、または送金元と送金先が同一の場合
-     * @throws InsufficientBankBalanceException 送金元の銀行残高が不足している場合
-     * @throws ArithmeticException              送金先の銀行残高加算時にオーバーフローした場合
      */
     public void transfer(
             final UUID senderId,
@@ -208,24 +198,97 @@ public class BankService {
             );
         }
 
-        final int senderBalance = bankRepository.findBalance(senderId);
+        final int beforeSenderBalance = bankRepository.findBalance(senderId);
 
-        if (senderBalance < amount) {
+        if (beforeSenderBalance < amount) {
             throw new InsufficientBankBalanceException(
                     senderId,
-                    senderBalance,
+                    beforeSenderBalance,
                     amount
             );
         }
 
-        final int receiverBalance = bankRepository.findBalance(receiverId);
+        final int beforeReceiverBalance = bankRepository.findBalance(receiverId);
 
-        final int updatedSenderBalance = senderBalance - amount;
+        final int afterSenderBalance = beforeSenderBalance - amount;
 
-        final int updatedReceiverBalance = Math.addExact(receiverBalance, amount);
+        final int afterReceiverBalance = Math.addExact(beforeReceiverBalance, amount);
 
-        bankRepository.setBalance(senderId, updatedSenderBalance);
-        bankRepository.setBalance(receiverId, updatedReceiverBalance);
+        // 送金元と送金先をまとめて更新し、保存を1回に限定する
+        bankRepository.setBalances(
+                Map.of(
+                        senderId,
+                        afterSenderBalance,
+                        receiverId,
+                        afterReceiverBalance
+                )
+        );
+
+        // Repository更新成功後に送金元と送金先の銀行残高変更イベントを発行する
+        publishBalanceChanged(
+                senderId,
+                beforeSenderBalance,
+                afterSenderBalance,
+                BankBalanceChangeReason.TRANSFER_SENT
+        );
+
+        publishBalanceChanged(
+                receiverId,
+                beforeReceiverBalance,
+                afterReceiverBalance,
+                BankBalanceChangeReason.TRANSFER_RECEIVED
+        );
+    }
+
+    /**
+     * 銀行残高を更新し、変更イベントを発行する
+     *
+     * @param playerId      プレイヤーUUID
+     * @param beforeBalance 変更前銀行残高
+     * @param afterBalance  変更後銀行残高
+     * @param reason        変更理由
+     */
+    private void updateBalance(
+            final UUID playerId,
+            final int beforeBalance,
+            final int afterBalance,
+            final BankBalanceChangeReason reason
+    ) {
+        bankRepository.setBalance(
+                playerId,
+                afterBalance
+        );
+
+        publishBalanceChanged(
+                playerId,
+                beforeBalance,
+                afterBalance,
+                reason
+        );
+    }
+
+    /**
+     * 銀行残高変更イベントを発行します。
+     *
+     * @param playerId     対象プレイヤーUUID
+     * @param beforeAmount 変更前残高
+     * @param afterAmount  変更後残高
+     * @param reason       変更理由
+     */
+    private void publishBalanceChanged(
+            final UUID playerId,
+            final int beforeAmount,
+            final int afterAmount,
+            final BankBalanceChangeReason reason
+    ) {
+        eventPublisher.publish(
+                new BankBalanceChangedEvent(
+                        playerId,
+                        beforeAmount,
+                        afterAmount,
+                        reason
+                )
+        );
     }
 
     /**

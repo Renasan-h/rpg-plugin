@@ -1,5 +1,6 @@
 package com.example.rpg.bank.repository;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -32,4 +33,16 @@ public interface IBankRepository {
      * @throws IllegalArgumentException amountが負数の場合
      */
     int setBalance(UUID playerId, int amount);
+
+    /**
+     * 複数プレイヤーの銀行残高を更新します。
+     *
+     * <p>
+     * すべての残高を更新した後に永続化を行います。
+     * </p>
+     *
+     * @param balances 更新する銀行残高
+     * @throws NullPointerException balancesがnullの場合
+     */
+    void setBalances(Map<UUID, Integer> balances);
 }

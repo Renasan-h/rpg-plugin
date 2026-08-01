@@ -26,17 +26,24 @@ public final class ResourceStatus {
     private final int stamina;
 
     /**
+     * 現在シールド量
+     */
+    private final int shiled;
+
+    /**
      * ResourceStatusを生成します。
      *
      * @param hp      現在HP
      * @param mp      現在MP
      * @param stamina 現在スタミナ
+     * @param shiled  現在シールド量
      * @throws IllegalArgumentException いずれかの値が負数の場合
      */
     public ResourceStatus(
             final int hp,
             final int mp,
-            final int stamina
+            final int stamina,
+            final int shiled
     ) {
         validateNonNegative(
                 "hp",
@@ -53,9 +60,15 @@ public final class ResourceStatus {
                 stamina
         );
 
+        validateNonNegative(
+                "shield",
+                shiled
+        );
+
         this.hp = hp;
         this.mp = mp;
         this.stamina = stamina;
+        this.shiled = shiled;
     }
 
     /**
@@ -106,6 +119,16 @@ public final class ResourceStatus {
     }
 
     /**
+     * 現在シールド量を取得します。
+     *
+     * @return 現在のシールド量
+     */
+    public int getShiled() {
+        return shiled;
+    }
+
+
+    /**
      * HPを指定値へ変更した新しいResourceStatusを生成します。
      *
      * @param newHp 新しい現在HP
@@ -115,7 +138,8 @@ public final class ResourceStatus {
         return new ResourceStatus(
                 newHp,
                 mp,
-                stamina
+                stamina,
+                shiled
         );
     }
 
@@ -129,7 +153,8 @@ public final class ResourceStatus {
         return new ResourceStatus(
                 hp,
                 newMp,
-                stamina
+                stamina,
+                shiled
         );
     }
 
@@ -145,7 +170,25 @@ public final class ResourceStatus {
         return new ResourceStatus(
                 hp,
                 mp,
-                newStamina
+                newStamina,
+                shiled
+        );
+    }
+
+    /**
+     * シールドを指定値へ変更した新しいResourceStatusを生成します。
+     *
+     * @param newShield 新しいシールド量
+     * @return シールド量だけを変更した新しいResourceStatus
+     */
+    public ResourceStatus withShield(
+            final int newShield
+    ) {
+        return new ResourceStatus(
+                hp,
+                mp,
+                stamina,
+                newShield
         );
     }
 }
